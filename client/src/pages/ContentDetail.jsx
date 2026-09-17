@@ -13,17 +13,66 @@ export default function ContentDetail() {
       .catch(() => setError("This content could not be found."));
   }, [id]);
 
-  // Basic SEO: update document title + meta description for this item.
+  // SEO: dynamic title, meta description, Open Graph tags, and a
+  // schema.org JSON-LD block so this page is properly discoverable
+  // and shows a real preview when shared.
   useEffect(() => {
     if (!item) return;
+
     document.title = `${item.title} — PolarConnect`;
-    let meta = document.querySelector('meta[name="description"]');
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.setAttribute("name", "description");
-      document.head.appendChild(meta);
+
+    const setMeta = (attr, key, content) => {
+      let tag = document.querySelector(`meta[${attr}="${key}"]`);
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute(attr, key);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", content);
+    };
+
+    setMeta("name", "description", item.description || item.title);
+    setMeta("property", "og:title", item.title);
+    setMeta("property", "og:description", item.description || item.title);
+    setMeta("property", "og:type", "article");
+    if (item.mediaType === "image") setMeta("property", "og:image", item.mediaUrl);
+
+    // Canonical URL — avoids duplicate-URL SEO issues (e.g. tracking params)
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
     }
-    meta.setAttribute("content", item.description || item.title);
+    canonical.setAttribute("href", window.location.origin + `/content/${item._id}`);
+
+    // schema.org structured data for Google rich results
+    const schemaType = item.mediaType === "video" ? "VideoObject"
+      : item.mediaType === "image" ? "ImageObject"
+      : "CreativeWork";
+
+    let ld = document.getElementById("pc-structured-data");
+    if (!ld) {
+      ld = document.createElement("script");
+      ld.type = "application/ld+json";
+      ld.id = "pc-structured-data";
+      document.head.appendChild(ld);
+    }
+    ld.textContent = JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": schemaType,
+      name: item.title,
+      description: item.description,
+      contentUrl: item.mediaUrl,
+      keywords: item.tags?.join(", "),
+      about: item.expeditionName || item.category,
+      publisher: {
+        "@type": "Organization",
+        name: "NCPOR — National Centre for Polar and Ocean Research",
+      },
+    });
+
+    return () => { ld.textContent = ""; }; // clear when navigating away
   }, [item]);
 
   if (error) return <div className="container"><p className="status status-error">{error}</p></div>;

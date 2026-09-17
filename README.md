@@ -57,6 +57,19 @@ Admin uploads content + metadata
 | GET | `/api/content/:id` | Get single content item |
 | PUT | `/api/content/:id` | Update a content record (admin only) |
 | DELETE | `/api/content/:id` | Remove a content record (admin only) |
+| GET | `/sitemap.xml` | XML sitemap for search engines |
+| GET | `/robots.txt` | Crawler rules, points at the sitemap |
+| GET | `/api/sitemap` | JSON site index (category → content), used by the `/sitemap` page |
+
+## SEO
+
+- **Meta tags & Open Graph** — each content page (`ContentDetail.jsx`) sets a dynamic `<title>`, meta description, and `og:title`/`og:description`/`og:image` so shared links preview correctly.
+- **Structured data** — a `schema.org` JSON-LD block (`CreativeWork`/`ImageObject`/`VideoObject`) is injected per content page for Google rich results.
+- **`sitemap.xml`** — auto-generated from all approved content, for search engines.
+- **`robots.txt`** — allows public routes, disallows `/admin/`.
+- **Human-readable Sitemap page** (`/sitemap`) — a categorized index of every published item, for visitors and screen readers (the way many government sites, e.g. UIDAI, expose one), not just search-engine crawlers.
+
+> **Deployment note:** `sitemap.xml` and `robots.txt` must be reachable at the **site's own domain root** (e.g. `polarconnect.in/sitemap.xml`), not the API's. If the frontend and backend are deployed on different domains/subdomains, reverse-proxy those two paths from the frontend domain to the backend, or serve them as static files from the frontend build instead.
 
 ## Getting Started
 
@@ -83,6 +96,7 @@ CLOUDINARY_API_SECRET=
 RESEND_API_KEY=
 EMAIL_FROM=
 EMAIL_TO=
+PUBLIC_SITE_URL=
 ```
 
 ## References
