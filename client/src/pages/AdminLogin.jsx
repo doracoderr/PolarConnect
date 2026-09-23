@@ -16,7 +16,7 @@ export default function AdminLogin() {
     try {
       const { data } = await api.post("/auth/login", { email, password });
       localStorage.setItem("pc_token", data.token);
-      navigate("/admin/upload");
+      navigate("/admin/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
     } finally {
