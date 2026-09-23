@@ -3,6 +3,7 @@ import PublicPortal from "./pages/PublicPortal.jsx";
 import ContentDetail from "./pages/ContentDetail.jsx";
 import AdminLogin from "./pages/AdminLogin.jsx";
 import AdminUpload from "./pages/AdminUpload.jsx";
+import Sitemap from "./pages/Sitemap.jsx";
 
 function isLoggedIn() {
   return Boolean(localStorage.getItem("pc_token"));
@@ -50,6 +51,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<PublicPortal />} />
           <Route path="/content/:id" element={<ContentDetail />} />
+          <Route path="/sitemap" element={<Sitemap />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route
             path="/admin/upload"
@@ -62,7 +64,7 @@ export default function App() {
         </Routes>
       </main>
       <footer className="footer">
-        NCPOR &middot; Ministry of Earth Sciences &middot; Built by Team The PARIKALP (SIH26063)
+        NCPOR &middot; Ministry of Earth Sciences &middot; Built by Team The PARIKALP (SIH26063) &middot; <Link to="/sitemap">Sitemap</Link>
       </footer>
     </div>
   );
