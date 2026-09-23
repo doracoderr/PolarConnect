@@ -6,6 +6,7 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/auth.routes");
 const uploadRoutes = require("./routes/upload.routes");
 const contentRoutes = require("./routes/content.routes");
+const seoRoutes = require("./routes/seo.routes");
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.get("/api/health", (req, res) => res.json({ status: "ok", service: "polarcon
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/content", contentRoutes);
+app.use("/", seoRoutes);
 
 // 404 handler
 app.use((req, res) => res.status(404).json({ message: "Route not found" }));

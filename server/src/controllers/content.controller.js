@@ -20,8 +20,9 @@ async function createContent(req, res) {
       ? tags
       : (tags || "").split(",").map((t) => t.trim()).filter(Boolean);
 
-    const { description, socialCaption } = generateSummary({
+    const { description, socialCaption } = await generateSummary({
       title, category, expeditionName, tags: tagList, notes,
+      mediaUrl, mediaType,
     });
 
     const content = await Content.create({
