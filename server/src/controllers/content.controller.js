@@ -1,6 +1,19 @@
 const Content = require("../models/Content");
 const { generateSummary } = require("../services/summary.service");
 const { sendUploadConfirmation } = require("../services/email.service");
+const { signMediaToken } = require("../utils/mediaToken");
+
+// Attaches a short-lived viewUrl (our own /api/media/:id proxy) to a
+// content item, and strips out the real Cloudinary mediaUrl/publicId
+// before it's ever sent to a public-facing client.
+function toPublicJSON(content) {
+  const obj = content.toObject ? content.toObject() : { ...content };
+  const base = process.env.PUBLIC_API_URL || "/api";
+  obj.viewUrl = `${base}/media/${obj._id}?token=${signMediaToken(obj._id)}`;
+  delete obj.mediaUrl;
+  delete obj.cloudinaryPublicId;
+  return obj;
+}
 
 // POST /api/content  (admin only) — called after the file is already on Cloudinary
 async function createContent(req, res) {
@@ -36,13 +49,11 @@ async function createContent(req, res) {
       mediaType,
       cloudinaryPublicId,
       uploadedBy: req.admin._id,
-      approvedForDisplay: true, // set to false here if you want a manual review step
+      approvedForDisplay: false, // stays a draft until the admin explicitly publishes it
       publishedAt: new Date(),
     });
 
-    sendUploadConfirmation(content); // fire-and-forget
-
-    return res.status(201).json({ content });
+    return res.status(201).json({ content: toPublicJSON(content) });
   } catch (err) {
     console.error("[content] create error:", err.message);
     return res.status(500).json({ message: "Server error while saving content" });
@@ -50,23 +61,39 @@ async function createContent(req, res) {
 }
 
 // GET /api/content  (public) — list, search, filter
+//
+// Pagination is opt-in: if the caller doesn't send a `limit`, we return
+// EVERY approved item (sorted, newest first) instead of silently capping
+// at some default page size. That way the public portal shows everything
+// by default, and only paginates if/when it explicitly asks to.
 async function listContent(req, res) {
   try {
-    const { search, category, expedition, page = 1, limit = 12 } = req.query;
+    const { search, category, expedition, page = 1, limit } = req.query;
 
     const query = { approvedForDisplay: true };
     if (category) query.category = category;
     if (expedition) query.expeditionName = expedition;
     if (search) query.$text = { $search: search };
 
-    const skip = (Number(page) - 1) * Number(limit);
+    let itemsQuery = Content.find(query).sort({ publishedAt: -1 });
+
+    const hasLimit = limit !== undefined && limit !== null && limit !== "";
+    if (hasLimit) {
+      const skip = (Number(page) - 1) * Number(limit);
+      itemsQuery = itemsQuery.skip(skip).limit(Number(limit));
+    }
 
     const [items, total] = await Promise.all([
-      Content.find(query).sort({ publishedAt: -1 }).skip(skip).limit(Number(limit)),
+      itemsQuery,
       Content.countDocuments(query),
     ]);
 
-    return res.json({ items, total, page: Number(page), limit: Number(limit) });
+    return res.json({
+      items: items.map(toPublicJSON),
+      total,
+      page: Number(page),
+      limit: hasLimit ? Number(limit) : total,
+    });
   } catch (err) {
     console.error("[content] list error:", err.message);
     return res.status(500).json({ message: "Server error while fetching content" });
@@ -80,9 +107,21 @@ async function getContentById(req, res) {
     if (!content || !content.approvedForDisplay) {
       return res.status(404).json({ message: "Content not found" });
     }
-    return res.json({ content });
+    return res.json({ content: toPublicJSON(content) });
   } catch (err) {
     return res.status(404).json({ message: "Content not found" });
+  }
+}
+
+// GET /api/content/admin/all (admin only) — every item, published or draft,
+// so the admin dashboard can show what's live vs. what's waiting to be published.
+async function listAllForAdmin(req, res) {
+  try {
+    const items = await Content.find().sort({ createdAt: -1 });
+    return res.json({ items: items.map(toPublicJSON) });
+  } catch (err) {
+    console.error("[content] admin list error:", err.message);
+    return res.status(500).json({ message: "Server error while fetching content" });
   }
 }
 
@@ -92,13 +131,19 @@ async function updateContent(req, res) {
     const updates = { ...req.body };
     delete updates.uploadedBy; // uploader can't be changed via this route
 
+    const before = await Content.findById(req.params.id);
+    if (!before) return res.status(404).json({ message: "Content not found" });
+
+    const isNowPublishing = updates.approvedForDisplay === true && !before.approvedForDisplay;
+
     const content = await Content.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true,
     });
 
-    if (!content) return res.status(404).json({ message: "Content not found" });
-    return res.json({ content });
+    if (isNowPublishing) sendUploadConfirmation(content); // fire-and-forget, on actual publish
+
+    return res.json({ content: toPublicJSON(content) });
   } catch (err) {
     console.error("[content] update error:", err.message);
     return res.status(500).json({ message: "Server error while updating content" });
@@ -117,4 +162,22 @@ async function deleteContent(req, res) {
   }
 }
 
-module.exports = { createContent, listContent, getContentById, updateContent, deleteContent };
+// PATCH /api/content/:id/fix-type (admin only) — Fix mediaType if incorrectly marked as "image"
+async function fixMediaType(req, res) {
+  try {
+    const content = await Content.findByIdAndUpdate(
+      req.params.id,
+      { mediaType: "document" },
+      { new: true }
+    );
+    if (!content) return res.status(404).json({ message: "Content not found" });
+    return res.json({ content: toPublicJSON(content), message: "Media type fixed to 'document'" });
+  } catch (err) {
+    console.error("[content] fix-type error:", err.message);
+    return res.status(500).json({ message: "Server error while fixing media type" });
+  }
+}
+
+module.exports = {
+  createContent, listContent, getContentById, updateContent, deleteContent, listAllForAdmin, fixMediaType,
+};

@@ -4,9 +4,12 @@ export default function ContentCard({ item }) {
   return (
     <Link to={`/content/${item._id}`} className="card">
       {item.mediaType === "image" ? (
-        <img src={item.mediaUrl} alt={item.title} className="card-img" loading="lazy" />
+        <img src={item.viewUrl} alt={item.title} className="card-img" loading="lazy" />
       ) : (
-        <div className="card-img card-img-placeholder">{item.mediaType.toUpperCase()}</div>
+        <div className="card-img card-img-placeholder">
+          <span className="card-icon">{item.mediaType === "video" ? "🎬" : "📄"}</span>
+          <span>{item.mediaType === "video" ? "View Video →" : "View Document →"}</span>
+        </div>
       )}
       <div className="card-body">
         <span className="badge">{item.category}</span>

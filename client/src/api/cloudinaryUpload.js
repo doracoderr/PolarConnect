@@ -9,12 +9,24 @@ import api from "./client";
 export async function uploadToCloudinary(file, onProgress) {
   const { data: sig } = await api.get("/upload/signature");
 
+  // Determine resource type based on MIME type, not Cloudinary's auto-detection
+  let resourceType = "auto";
+  if (file.type.startsWith("video/")) {
+    resourceType = "video";
+  } else if (file.type.startsWith("image/")) {
+    resourceType = "image";
+  } else {
+    // PDFs, documents, etc. → "raw" type (Cloudinary won't try to interpret as image/video)
+    resourceType = "raw";
+  }
+
   const form = new FormData();
   form.append("file", file);
   form.append("api_key", sig.apiKey);
   form.append("timestamp", sig.timestamp);
   form.append("signature", sig.signature);
   form.append("folder", sig.folder);
+  form.append("resource_type", resourceType); // ← EXPLICITLY SET
 
   const uploadUrl =
     import.meta.env.VITE_CLOUDINARY_UPLOAD_URL ||

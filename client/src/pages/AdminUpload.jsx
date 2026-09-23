@@ -1,8 +1,15 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/client";
 import { uploadToCloudinary } from "../api/cloudinaryUpload";
+import { compressImageIfNeeded } from "../utils/compressImage";
 
 const CATEGORIES = ["Antarctica", "Arctic", "Himalaya", "General"];
+
+// Cloudinary free-plan limits: 10MB for images/raw (PDFs etc.), 100MB for video.
+const MAX_RAW_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+const mb = (bytes) => (bytes / (1024 * 1024)).toFixed(1);
 
 export default function AdminUpload() {
   const [file, setFile] = useState(null);
@@ -25,12 +32,43 @@ export default function AdminUpload() {
 
     try {
       setStatus("uploading");
-      setMessage("Uploading media to Cloudinary...");
-      const uploadResult = await uploadToCloudinary(file);
 
+      let uploadFile = file;
+      if (file.type.startsWith("image/")) {
+        if (file.size > MAX_RAW_BYTES) {
+          setMessage(`Compressing image (${mb(file.size)}MB)...`);
+          uploadFile = await compressImageIfNeeded(file, 9 * 1024 * 1024);
+          if (uploadFile.size > MAX_RAW_BYTES) {
+            throw new Error(
+              `This image is still ${mb(uploadFile.size)}MB after compression — please use a smaller photo (max 10MB).`
+            );
+          }
+        }
+      } else if (file.type.startsWith("video/")) {
+        if (file.size > MAX_VIDEO_BYTES) {
+          throw new Error(
+            `This video is ${mb(file.size)}MB — videos are limited to 100MB on our current Cloudinary plan. Please compress it (e.g. HandBrake) and try again.`
+          );
+        }
+      } else {
+        // PDFs and other documents — we can't safely re-compress these in
+        // the browser, so just give a clear message instead of a raw
+        // Cloudinary error.
+        if (file.size > MAX_RAW_BYTES) {
+          throw new Error(
+            `This file is ${mb(file.size)}MB — documents are limited to 10MB on our current Cloudinary plan. Please compress the PDF (e.g. ilovepdf.com/compress_pdf) and try again.`
+          );
+        }
+      }
+
+      setMessage("Uploading media to Cloudinary...");
+      const uploadResult = await uploadToCloudinary(uploadFile);
+
+      // Convert Cloudinary resource_type to our mediaType
       const mediaType = uploadResult.resource_type === "video" ? "video"
         : uploadResult.resource_type === "image" ? "image"
-        : "document";
+        : uploadResult.resource_type === "raw" ? "document"
+        : "document"; // fallback for anything else
 
       setStatus("saving");
       setMessage("Saving content record...");
@@ -43,7 +81,7 @@ export default function AdminUpload() {
 
       setLastResult(data.content);
       setStatus("done");
-      setMessage("Uploaded and published successfully.");
+      setMessage("Saved as a draft. It won't appear on the public portal until you publish it.");
 
       // reset form
       setFile(null); setTitle(""); setExpeditionName(""); setTags(""); setNotes("");
@@ -99,6 +137,7 @@ export default function AdminUpload() {
           <p>{lastResult.description}</p>
           <h3>Auto-generated social caption</h3>
           <p>{lastResult.socialCaption}</p>
+          <Link to="/admin/content">Go to Content &rarr; publish it from there</Link>
         </div>
       )}
     </div>

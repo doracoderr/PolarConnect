@@ -6,6 +6,7 @@ export default function ContentDetail() {
   const { id } = useParams();
   const [item, setItem] = useState(null);
   const [error, setError] = useState("");
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     api.get(`/content/${id}`)
@@ -35,7 +36,7 @@ export default function ContentDetail() {
     setMeta("property", "og:title", item.title);
     setMeta("property", "og:description", item.description || item.title);
     setMeta("property", "og:type", "article");
-    if (item.mediaType === "image") setMeta("property", "og:image", item.mediaUrl);
+    if (item.mediaType === "image") setMeta("property", "og:image", item.viewUrl);
 
     // Canonical URL — avoids duplicate-URL SEO issues (e.g. tracking params)
     let canonical = document.querySelector('link[rel="canonical"]');
@@ -63,7 +64,7 @@ export default function ContentDetail() {
       "@type": schemaType,
       name: item.title,
       description: item.description,
-      contentUrl: item.mediaUrl,
+      contentUrl: item.viewUrl,
       keywords: item.tags?.join(", "),
       about: item.expeditionName || item.category,
       publisher: {
@@ -85,14 +86,22 @@ export default function ContentDetail() {
       <h1>{item.title}</h1>
       {item.expeditionName && <p className="muted">Expedition: {item.expeditionName}</p>}
 
-      {item.mediaType === "image" ? (
-        <img src={item.mediaUrl} alt={item.title} className="detail-media" />
+      {item.mediaType === "image" && !imageError ? (
+        <img 
+          src={item.viewUrl} 
+          alt={item.title} 
+          className="detail-media"
+          onError={() => setImageError(true)}
+        />
       ) : item.mediaType === "video" ? (
-        <video src={item.mediaUrl} controls className="detail-media" />
+        <video src={item.viewUrl} controls className="detail-media" />
       ) : (
-        <a href={item.mediaUrl} target="_blank" rel="noreferrer" className="doc-link">
-          View document
-        </a>
+        <div className="document-view">
+          <p className="doc-note">📄 Document / Report</p>
+          <a href={item.viewUrl} target="_blank" rel="noreferrer" className="doc-link">
+            📥 View / Download Document
+          </a>
+        </div>
       )}
 
       <p className="description">{item.description}</p>
