@@ -10,7 +10,7 @@ import AdminUpload from "./pages/AdminUpload.jsx";
 import AdminContentList from "./pages/AdminContentList.jsx";
 import AdminEditContent from "./pages/AdminEditContent.jsx";
 import Sitemap from "./pages/Sitemap.jsx";
-
+import Footer from "./components/footer.jsx";
 function isLoggedIn() {
   return Boolean(localStorage.getItem("pc_token"));
 }
@@ -156,9 +156,7 @@ export default function App() {
           />
         </Routes>
       </main>
-      <footer className="footer">
-        NCPOR &middot; Ministry of Earth Sciences &middot; Built by Team The PARIKALP (SIH26063) &middot; <Link to="/sitemap">Sitemap</Link>
-      </footer>
+      <Footer/>
     </div>
   );
 }
