@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { Routes, Route, Link, NavLink, useNavigate, useLocation } from "react-router-dom";
 import PublicPortal from "./pages/PublicPortal.jsx";
 import ContentDetail from "./pages/ContentDetail.jsx";
+import About from "./pages/About.jsx";
+import Contact from "./pages/Contact.jsx";
 import AdminLogin from "./pages/AdminLogin.jsx";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminUpload from "./pages/AdminUpload.jsx";
 import AdminContentList from "./pages/AdminContentList.jsx";
 import AdminEditContent from "./pages/AdminEditContent.jsx";
@@ -64,17 +67,20 @@ function Navbar() {
 
         <div className={"nav-links" + (menuOpen ? " is-open" : "")}>
           <NavLink to="/" end className={navClass} onClick={closeMenu}>
-            Portal
+            Home
+          </NavLink>
+          <NavLink to="/about" className={navClass} onClick={closeMenu}>
+            About
+          </NavLink>
+          <NavLink to="/contact" className={navClass} onClick={closeMenu}>
+            Contact
           </NavLink>
 
           {loggedIn ? (
             <div className="nav-admin-group">
               <span className="nav-divider" aria-hidden="true" />
-              <NavLink to="/admin/content" className={navClass} onClick={closeMenu}>
-                Content
-              </NavLink>
-              <NavLink to="/admin/upload" className={navClass} onClick={closeMenu}>
-                Upload
+              <NavLink to="/admin/dashboard" className={navClass} onClick={closeMenu}>
+                Dashboard
               </NavLink>
               <button onClick={logout} className="nav-button nav-button-outline">
                 Log out
@@ -112,8 +118,18 @@ export default function App() {
         <Routes>
           <Route path="/" element={<PublicPortal />} />
           <Route path="/content/:id" element={<ContentDetail />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           <Route path="/sitemap" element={<Sitemap />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <RequireAuth>
+                <AdminDashboard />
+              </RequireAuth>
+            }
+          />
           <Route
             path="/admin/upload"
             element={

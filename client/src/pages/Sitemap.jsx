@@ -34,7 +34,9 @@ export default function Sitemap() {
       <section className="sitemap-section">
         <h2>Main</h2>
         <ul className="sitemap-list">
-          <li><Link to="/">Portal Home</Link></li>
+          <li><Link to="/">Home</Link></li>
+          <li><Link to="/about">About</Link></li>
+          <li><Link to="/contact">Contact</Link></li>
           <li><Link to="/admin/login">Admin Login</Link></li>
         </ul>
       </section>
