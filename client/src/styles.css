@@ -249,3 +249,66 @@ body { margin: 0; font-family: system-ui, sans-serif; color: var(--text); backgr
 }
 .doc-link:hover { background: #16717f; text-decoration: none; }
 .sitemap-footer-note { margin-top: 24px; font-size: 0.85rem; }
+/* Privacy & Terms pages */
+
+.policy-page {
+  min-height: 70vh;
+  padding: 48px 24px 64px;
+  background: #f7f9fc;
+}
+
+.policy-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 48px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+}
+
+.policy-container h1 {
+  margin: 0 0 28px;
+  color: var(--navy);
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+.policy-container h2 {
+  margin: 28px 0 10px;
+  color: var(--navy);
+  font-size: 1.15rem;
+}
+
+.policy-container p {
+  margin: 0 0 16px;
+  color: #4b5563;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.policy-updated {
+  margin-top: 36px !important;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280 !important;
+  font-size: 0.8rem !important;
+}
+
+/* Mobile */
+@media (max-width: 700px) {
+  .policy-page {
+    padding: 28px 16px 48px;
+  }
+
+  .policy-container {
+    padding: 28px 22px;
+  }
+
+  .policy-container h1 {
+    font-size: 1.6rem;
+  }
+
+  .policy-container h2 {
+    font-size: 1.05rem;
+  }
+}

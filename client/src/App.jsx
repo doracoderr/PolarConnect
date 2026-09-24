@@ -22,15 +22,6 @@ import AdminEditContent from "./pages/AdminEditContent.jsx";
 
 import Sitemap from "./pages/Sitemap.jsx";
 import Footer from "./components/footer.jsx";
-
-import "./styles.css";
-import "./admin.css";
-
-
-/* =========================================================
-   AUTH
-========================================================= */
-
 function isLoggedIn() {
   return Boolean(localStorage.getItem("pc_token"));
 }
@@ -775,178 +766,50 @@ function PublicNavbar() {
 export default function App() {
   return (
     <div className="app-shell">
-
-      <Routes>
-
-        {/* ===============================================
-            ADMIN LOGIN
-        =============================================== */}
-
-        <Route
-          path="/admin/login"
-          element={
-            <AdminLogin />
-          }
-        />
-
-
-        {/* ===============================================
-            ADMIN DASHBOARD
-        =============================================== */}
-
-        <Route
-          path="/admin/dashboard"
-          element={
-            <RequireAuth>
-              <AdminDashboard />
-            </RequireAuth>
-          }
-        />
-
-
-        {/* ===============================================
-            ADMIN UPLOAD
-        =============================================== */}
-
-        <Route
-          path="/admin/upload"
-          element={
-            <RequireAuth>
-              <AdminUpload />
-            </RequireAuth>
-          }
-        />
-
-
-        {/* ===============================================
-            ADMIN CONTENT
-        =============================================== */}
-
-        <Route
-          path="/admin/content"
-          element={
-            <RequireAuth>
-              <AdminContentList />
-            </RequireAuth>
-          }
-        />
-
-
-        {/* ===============================================
-            ADMIN EDIT
-        =============================================== */}
-
-        <Route
-          path="/admin/content/:id/edit"
-          element={
-            <RequireAuth>
-              <AdminEditContent />
-            </RequireAuth>
-          }
-        />
-
-
-        {/* ===============================================
-            PUBLIC HOME
-        =============================================== */}
-
-        <Route
-          path="/"
-          element={
-            <>
-              <PublicNavbar />
-
-              <main className="main-content">
-                <PublicPortal />
-              </main>
-
-              <Footer />
-            </>
-          }
-        />
-
-
-        {/* ===============================================
-            CONTENT DETAIL
-        =============================================== */}
-
-        <Route
-          path="/content/:id"
-          element={
-            <>
-              <PublicNavbar />
-
-              <main className="main-content">
-                <ContentDetail />
-              </main>
-
-              <Footer />
-            </>
-          }
-        />
-
-
-        {/* ===============================================
-            ABOUT
-        =============================================== */}
-
-        <Route
-          path="/about"
-          element={
-            <>
-              <PublicNavbar />
-
-              <main className="main-content">
-                <About />
-              </main>
-
-              <Footer />
-            </>
-          }
-        />
-
-
-        {/* ===============================================
-            CONTACT
-        =============================================== */}
-
-        <Route
-          path="/contact"
-          element={
-            <>
-              <PublicNavbar />
-
-              <main className="main-content">
-                <Contact />
-              </main>
-
-              <Footer />
-            </>
-          }
-        />
-
-
-        {/* ===============================================
-            SITEMAP
-        =============================================== */}
-
-        <Route
-          path="/sitemap"
-          element={
-            <>
-              <PublicNavbar />
-
-              <main className="main-content">
-                <Sitemap />
-              </main>
-
-              <Footer />
-            </>
-          }
-        />
-
-      </Routes>
-
+      <Navbar />
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<PublicPortal />} />
+          <Route path="/content/:id" element={<ContentDetail />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/sitemap" element={<Sitemap />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route
+            path="/admin/dashboard"
+            element={
+              <RequireAuth>
+                <AdminDashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/upload"
+            element={
+              <RequireAuth>
+                <AdminUpload />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/content"
+            element={
+              <RequireAuth>
+                <AdminContentList />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/admin/content/:id/edit"
+            element={
+              <RequireAuth>
+                <AdminEditContent />
+              </RequireAuth>
+            }
+          />
+        </Routes>
+      </main>
+      <Footer/>
     </div>
   );
 }
