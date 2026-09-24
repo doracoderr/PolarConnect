@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Routes, Route, Link, NavLink, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, Link, NavLink, useNavigate, useLocation, useParams } from "react-router-dom";
 import PublicPortal from "./pages/PublicPortal.jsx";
+import Home from "./pages/Home.jsx";
 import ContentDetail from "./pages/ContentDetail.jsx";
+import Expeditions from "./pages/Expeditions.jsx";
 import About from "./pages/About.jsx";
 import Contact from "./pages/Contact.jsx";
 import AdminLogin from "./pages/AdminLogin.jsx";
@@ -72,6 +74,18 @@ function Navbar() {
           <NavLink to="/" end className={navClass} onClick={closeMenu}>
             Home
           </NavLink>
+          <NavLink to="/antarctica" className={navClass} onClick={closeMenu}>
+            Antarctica
+          </NavLink>
+          <NavLink to="/arctic" className={navClass} onClick={closeMenu}>
+            Arctic
+          </NavLink>
+          <NavLink to="/himalaya" className={navClass} onClick={closeMenu}>
+            Himalaya
+          </NavLink>
+          <NavLink to="/expeditions" className={navClass} onClick={closeMenu}>
+            Expeditions
+          </NavLink>
           <NavLink to="/about" className={navClass} onClick={closeMenu}>
             About
           </NavLink>
@@ -113,6 +127,14 @@ function Navbar() {
   );
 }
 
+// Wraps PublicPortal for /expedition/:name — decodes the name from the
+// route and remounts (via key) whenever it changes between expeditions.
+function ExpeditionDetail() {
+  const { name } = useParams();
+  const decoded = decodeURIComponent(name || "");
+  return <PublicPortal key={decoded} fixedExpedition={decoded} />;
+}
+
 function RequireAuth({ children }) {
   const navigate = useNavigate();
   if (!isLoggedIn()) {
@@ -128,7 +150,12 @@ export default function App() {
       <Navbar />
       <main className="main-content">
         <Routes>
-          <Route path="/" element={<PublicPortal />} />
+          <Route path="/" element={<Home />} />
+          <Route path="/antarctica" element={<PublicPortal key="antarctica" fixedCategory="Antarctica" />} />
+          <Route path="/arctic" element={<PublicPortal key="arctic" fixedCategory="Arctic" />} />
+          <Route path="/himalaya" element={<PublicPortal key="himalaya" fixedCategory="Himalaya" />} />
+          <Route path="/expeditions" element={<Expeditions />} />
+          <Route path="/expedition/:name" element={<ExpeditionDetail />} />
           <Route path="/content/:id" element={<ContentDetail />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
