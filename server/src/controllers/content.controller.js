@@ -21,6 +21,9 @@ async function createContent(req, res) {
     const {
       title, category, expeditionName, tags, notes,
       mediaUrl, mediaType, cloudinaryPublicId,
+      description: providedDescription,
+      socialCaption: providedCaption,
+      publish,
     } = req.body;
 
     if (!title || !mediaUrl || !mediaType || !cloudinaryPublicId) {
@@ -33,10 +36,20 @@ async function createContent(req, res) {
       ? tags
       : (tags || "").split(",").map((t) => t.trim()).filter(Boolean);
 
-    const { description, socialCaption } = await generateSummary({
-      title, category, expeditionName, tags: tagList, notes,
-      mediaUrl, mediaType,
-    });
+    // The admin may already have generated (and edited) the summary in the
+    // upload flow — only call the generator if it wasn't supplied.
+    let description = (providedDescription || "").trim();
+    let socialCaption = (providedCaption || "").trim();
+    if (!description || !socialCaption) {
+      const generated = await generateSummary({
+        title, category, expeditionName, tags: tagList, notes,
+        mediaUrl, mediaType,
+      });
+      description = description || generated.description;
+      socialCaption = socialCaption || generated.socialCaption;
+    }
+
+    const shouldPublish = publish === true;
 
     const content = await Content.create({
       title,
@@ -49,14 +62,39 @@ async function createContent(req, res) {
       mediaType,
       cloudinaryPublicId,
       uploadedBy: req.admin._id,
-      approvedForDisplay: false, // stays a draft until the admin explicitly publishes it
+      approvedForDisplay: shouldPublish, // draft unless the admin chose "Publish"
       publishedAt: new Date(),
     });
+
+    if (shouldPublish) sendUploadConfirmation(content); // fire-and-forget
 
     return res.status(201).json({ content: toPublicJSON(content) });
   } catch (err) {
     console.error("[content] create error:", err.message);
     return res.status(500).json({ message: "Server error while saving content" });
+  }
+}
+
+// POST /api/content/summary  (admin only) — generate a summary + social
+// caption for the upload preview step, without saving anything.
+async function previewSummary(req, res) {
+  try {
+    const { title, category, expeditionName, tags, notes, mediaUrl, mediaType } = req.body;
+    if (!title) return res.status(400).json({ message: "title is required" });
+
+    const tagList = Array.isArray(tags)
+      ? tags
+      : (tags || "").split(",").map((t) => t.trim()).filter(Boolean);
+
+    const { description, socialCaption } = await generateSummary({
+      title, category: category || "General", expeditionName, tags: tagList, notes,
+      mediaUrl, mediaType,
+    });
+
+    return res.json({ description, socialCaption });
+  } catch (err) {
+    console.error("[content] summary preview error:", err.message);
+    return res.status(500).json({ message: "Could not generate summary" });
   }
 }
 
@@ -179,5 +217,5 @@ async function fixMediaType(req, res) {
 }
 
 module.exports = {
-  createContent, listContent, getContentById, updateContent, deleteContent, listAllForAdmin, fixMediaType,
+  createContent, previewSummary, listContent, getContentById, updateContent, deleteContent, listAllForAdmin, fixMediaType,
 };
