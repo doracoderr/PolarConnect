@@ -11,6 +11,8 @@ import AdminContentList from "./pages/AdminContentList.jsx";
 import AdminEditContent from "./pages/AdminEditContent.jsx";
 import Sitemap from "./pages/Sitemap.jsx";
 import Footer from "./components/footer.jsx";
+import Privacy from "./pages/Privacy.jsx";
+import Terms from "./pages/Terms.jsx";
 import "./admin.css";
 function isLoggedIn() {
   return Boolean(localStorage.getItem("pc_token"));
@@ -132,6 +134,8 @@ export default function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/sitemap" element={<Sitemap />} />
           <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route
             path="/admin/dashboard"
             element={
