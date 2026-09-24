@@ -1,22 +1,45 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/client";
 import ContentCard from "../components/ContentCard.jsx";
 import SearchBar from "../components/SearchBar.jsx";
 
-const CATEGORY_ORDER = ["Antarctica", "Arctic", "Himalaya", "General"];
+const PLACE_COPY = {
+  Antarctica: {
+    icon: "🧊",
+    text: "Field reports, photographs and video from NCPOR's Maitri and Bharati stations, documenting India's ongoing presence in Antarctica.",
+    accent: "#2f6fa8",
+  },
+  Arctic: {
+    icon: "❄️",
+    text: "Dispatches from Himadri, India's Arctic research station in Svalbard — glaciology, atmospheric and marine studies.",
+    accent: "#1c8fa8",
+  },
+  Himalaya: {
+    icon: "🏔️",
+    text: "Glacier surveys and cryosphere fieldwork from across the Indian Himalaya, tracking change at its highest reaches.",
+    accent: "#7a6a53",
+  },
+};
+const PLACE_ORDER = ["Antarctica", "Arctic", "Himalaya"];
 
-export default function PublicPortal() {
+// A single place's content (fixedCategory: "Antarctica" / "Arctic" /
+// "Himalaya") or a single expedition's content (fixedExpedition: its name).
+// Used by /antarctica, /arctic, /himalaya and /expedition/:name — never
+// rendered bare, so it always has exactly one of the two.
+export default function PublicPortal({ fixedCategory, fixedExpedition }) {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  async function fetchContent() {
+  async function fetchContent(searchValue = search) {
     setLoading(true);
     setError("");
     try {
-      const { data } = await api.get("/content", { params: { search, category } });
+      const { data } = await api.get("/content", {
+        params: { search: searchValue, category: fixedCategory, expedition: fixedExpedition },
+      });
       setItems(data.items);
     } catch (err) {
       setError("Could not load content. Is the backend running?");
@@ -27,56 +50,51 @@ export default function PublicPortal() {
 
   useEffect(() => { fetchContent(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const isFiltered = Boolean(search.trim() || category);
-
-  // Group into category sections for the default browsing view; a search
-  // or an explicit category pick switches to a flat filtered grid instead.
-  const sections = CATEGORY_ORDER
-    .map((cat) => ({ cat, list: items.filter((i) => i.category === cat) }))
-    .filter((s) => s.list.length > 0);
-  const knownCats = new Set(CATEGORY_ORDER);
-  const other = items.filter((i) => !knownCats.has(i.category));
-  if (other.length > 0) sections.push({ cat: "Other", list: other });
+  const place = fixedCategory ? PLACE_COPY[fixedCategory] : null;
+  const heroTitle = fixedCategory || fixedExpedition || "";
+  const heroText = fixedCategory
+    ? (place?.text ?? `NCPOR's ${fixedCategory} expedition reports, photos and videos.`)
+    : `All reports, photos and videos from the ${fixedExpedition} expedition.`;
+  const accent = place?.accent || "var(--accent)";
 
   return (
     <div className="container">
-      <section className="hero">
-        <h1>PolarConnect</h1>
-        <p>Explore NCPOR's Antarctica, Arctic and Himalaya expedition reports, photos and videos.</p>
+      <div className="breadcrumb-row">
+        <Link to="/" className="breadcrumb-link">← Home</Link>
+        {fixedExpedition && <Link to="/expeditions" className="breadcrumb-link">All expeditions</Link>}
+        {fixedCategory && PLACE_ORDER.filter((p) => p !== fixedCategory).map((p) => (
+          <Link key={p} to={`/${p.toLowerCase()}`} className="breadcrumb-link">
+            {PLACE_COPY[p].icon} {p}
+          </Link>
+        ))}
+      </div>
+
+      <section className="place-hero" style={{ "--place-accent": accent }}>
+        {place && <span className="place-hero-icon">{place.icon}</span>}
+        <h1>{heroTitle}</h1>
+        <p>{heroText}</p>
       </section>
 
       <SearchBar
         search={search} setSearch={setSearch}
-        category={category} setCategory={setCategory}
-        onSubmit={fetchContent}
+        onSubmit={() => fetchContent()}
+        hideCategory
       />
 
       {loading && <p className="status">Loading content...</p>}
       {error && <p className="status status-error">{error}</p>}
       {!loading && !error && items.length === 0 && (
-        <p className="status">No content published yet — check back soon.</p>
+        <p className="status">No content published here yet — check back soon.</p>
       )}
 
       {!loading && !error && items.length > 0 && (
-        isFiltered ? (
+        <>
+          <p className="result-count">{items.length} result{items.length === 1 ? "" : "s"}</p>
           <div className="grid">
             {items.map((item) => <ContentCard key={item._id} item={item} />)}
           </div>
-        ) : (
-          sections.map(({ cat, list }) => (
-            <section className="category-section" key={cat}>
-              <div className="category-heading">
-                <h2>{cat}</h2>
-                <span className="category-count">{list.length}</span>
-              </div>
-              <div className="grid">
-                {list.map((item) => <ContentCard key={item._id} item={item} />)}
-              </div>
-            </section>
-          ))
-        )
+        </>
       )}
     </div>
   );
 }
-
