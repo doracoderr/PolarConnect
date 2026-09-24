@@ -6,6 +6,7 @@ export default function AdminContentList() {
   const [items, setItems] = useState(null);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState(null);
+  const [filter, setFilter] = useState("all");
 
   async function load() {
     setError("");
@@ -44,9 +45,7 @@ export default function AdminContentList() {
     setBusyId(item._id);
 
     try {
-      await api.patch(
-        `/content/${item._id}/fix-type`
-      );
+      await api.patch(`/content/${item._id}/fix-type`);
 
       await load();
     } catch {
@@ -79,9 +78,7 @@ export default function AdminContentList() {
   if (error) {
     return (
       <div className="container">
-        <p className="status status-error">
-          {error}
-        </p>
+        <p className="status status-error">{error}</p>
       </div>
     );
   }
@@ -89,49 +86,73 @@ export default function AdminContentList() {
   if (!items) {
     return (
       <div className="container">
-        <p className="status">
-          Loading...
-        </p>
+        <p className="status">Loading...</p>
       </div>
     );
   }
 
+  const filteredItems = items.filter((item) => {
+    if (filter === "published") {
+      return item.approvedForDisplay;
+    }
+
+    if (filter === "draft") {
+      return !item.approvedForDisplay;
+    }
+
+    return true;
+  });
+
   return (
     <div className="container admin-content-page">
       <section className="admin-hero">
-        <p className="admin-eyebrow">
-          POLARCONNECT ADMIN
-        </p>
+        <div>
+          <p className="admin-eyebrow">POLARCONNECT ADMIN</p>
 
-        <h1>Manage Content</h1>
+          <h1>Manage Content</h1>
 
-        <p className="admin-hero-description">
-          Review, edit, publish, unpublish, or delete
-          content uploaded to PolarConnect.
-        </p>
+          <p className="admin-hero-description">
+            Manage and publish your PolarConnect content.
+          </p>
+        </div>
+
+        <div className="admin-content-count">
+          <span>{items.length}</span>
+          <small>Total Content</small>
+        </div>
       </section>
 
       <section className="admin-section">
         <div className="admin-section-header">
           <div>
-            <h2>Content Library</h2>
-
-            <p>
-              Newly uploaded items are saved as{" "}
-              <strong>Draft</strong> and won't appear
-              on the public portal until you publish them.
-            </p>
+            
           </div>
 
           <Link
             to="/admin/upload"
             className="admin-primary-link"
           >
-            + Upload Content
+            Go to Upload Page
           </Link>
         </div>
 
-        {items.length === 0 ? (
+        <div className="admin-filter-bar">
+          <label htmlFor="content-filter">
+            Filter:
+          </label>
+
+          <select
+            id="content-filter"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            <option value="all">All Content</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+          </select>
+        </div>
+
+        {filteredItems.length === 0 ? (
           <div className="admin-empty-state">
             <div
               className="admin-empty-icon"
@@ -140,136 +161,148 @@ export default function AdminContentList() {
               🗂️
             </div>
 
-            <h3>No Content Yet</h3>
+            <h3>
+              {filter === "published"
+                ? "No Published Content"
+                : filter === "draft"
+                  ? "No Draft Content"
+                  : "No Content Yet"}
+            </h3>
 
             <p>
-              You haven't uploaded any expedition
-              content yet.
+              {filter === "published"
+                ? "There are no published items."
+                : filter === "draft"
+                  ? "There are no draft items."
+                  : "No content has been uploaded yet."}
             </p>
 
-            <Link
-              to="/admin/upload"
-              className="admin-primary-link"
-            >
-              Upload Your First Content
-            </Link>
+            {filter === "all" && (
+              <Link
+                to="/admin/upload"
+                className="admin-primary-link"
+              >
+                Go to Upload Page
+              </Link>
+            )}
           </div>
         ) : (
-          <div className="admin-table-wrapper">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Title</th>
-                  <th>Category</th>
-                  <th>Type</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+          <div className="admin-table-card">
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
 
-              <tbody>
-                {items.map((item) => {
-                  const isBusy =
-                    busyId === item._id;
+                <tbody>
+                  {filteredItems.map((item) => {
+                    const isBusy = busyId === item._id;
 
-                  return (
-                    <tr key={item._id}>
-                      <td>
-                        <div className="admin-content-title">
-                          {item.title}
-                        </div>
-                      </td>
+                    return (
+                      <tr key={item._id}>
+                        <td>
+                          <div className="admin-content-title">
+                            {item.title}
+                          </div>
+                        </td>
 
-                      <td>
-                        {item.category}
-                      </td>
+                        <td>
+                          <span className="admin-category">
+                            {item.category}
+                          </span>
+                        </td>
 
-                      <td>
-                        <span className="admin-type">
-                          {item.mediaType}
-                        </span>
-                      </td>
+                        <td>
+                          <span className="admin-type">
+                            {item.mediaType}
+                          </span>
+                        </td>
 
-                      <td>
-                        <span
-                          className={`badge ${
-                            item.approvedForDisplay
-                              ? "badge-live"
-                              : "badge-draft"
-                          }`}
-                        >
-                          {item.approvedForDisplay
-                            ? "Published"
-                            : "Draft"}
-                        </span>
-                      </td>
-
-                      <td>
-                        <div className="admin-actions">
-                          <a
-                            href={item.viewUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="admin-action-link"
+                        <td>
+                          <span
+                            className={`badge ${
+                              item.approvedForDisplay
+                                ? "badge-live"
+                                : "badge-draft"
+                            }`}
                           >
-                            View
-                          </a>
+                            {item.approvedForDisplay
+                              ? "Published"
+                              : "Draft"}
+                          </span>
+                        </td>
 
-                          <Link
-                            to={`/admin/content/${item._id}/edit`}
-                            className="admin-action-link"
-                          >
-                            Edit
-                          </Link>
+                        <td>
+                          <div className="admin-actions">
+                            <a
+                              href={item.viewUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="admin-action-link"
+                            >
+                              View
+                            </a>
 
-                          {item.mediaType === "image" && (
+                            <Link
+                              to={`/admin/content/${item._id}/edit`}
+                              className="admin-action-link"
+                            >
+                              Edit
+                            </Link>
+
+                            {item.mediaType === "image" && (
+                              <button
+                                type="button"
+                                className="link-button"
+                                disabled={isBusy}
+                                onClick={() =>
+                                  fixMediaType(item)
+                                }
+                                title="If this is a PDF/document marked as image, click to fix"
+                              >
+                                {isBusy
+                                  ? "Working..."
+                                  : "Fix Type"}
+                              </button>
+                            )}
+
                             <button
                               type="button"
                               className="link-button"
                               disabled={isBusy}
                               onClick={() =>
-                                fixMediaType(item)
+                                togglePublish(item)
                               }
-                              title="If this is a PDF/document marked as image, click to fix"
                             >
                               {isBusy
                                 ? "Working..."
-                                : "Fix Type →"}
+                                : item.approvedForDisplay
+                                  ? "Unpublish"
+                                  : "Publish"}
                             </button>
-                          )}
 
-                          <button
-                            type="button"
-                            className="link-button"
-                            disabled={isBusy}
-                            onClick={() =>
-                              togglePublish(item)
-                            }
-                          >
-                            {isBusy
-                              ? "Working..."
-                              : item.approvedForDisplay
-                                ? "Unpublish"
-                                : "Publish"}
-                          </button>
-
-                          <button
-                            type="button"
-                            className="link-button link-danger"
-                            disabled={isBusy}
-                            onClick={() =>
-                              remove(item)
-                            }
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            <button
+                              type="button"
+                              className="link-button link-danger"
+                              disabled={isBusy}
+                              onClick={() => remove(item)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
