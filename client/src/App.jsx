@@ -22,10 +22,25 @@ import AdminEditContent from "./pages/AdminEditContent.jsx";
 
 import Sitemap from "./pages/Sitemap.jsx";
 import Footer from "./components/footer.jsx";
+
+import "./styles.css";
+import "./admin.css";
+
+
+/* =========================================================
+   AUTH HELPERS
+========================================================= */
+
 function isLoggedIn() {
-  return Boolean(localStorage.getItem("pc_token"));
+  return Boolean(
+    localStorage.getItem("pc_token")
+  );
 }
 
+
+/* =========================================================
+   ADMIN AUTH GUARD
+========================================================= */
 
 function RequireAuth({ children }) {
   if (!isLoggedIn()) {
@@ -41,6 +56,27 @@ function RequireAuth({ children }) {
     <AdminLayout>
       {children}
     </AdminLayout>
+  );
+}
+
+
+/* =========================================================
+   PUBLIC PAGE LAYOUT
+========================================================= */
+
+function PublicLayout({ children }) {
+  return (
+    <div className="app-shell">
+
+      <PublicNavbar />
+
+      <main className="main-content">
+        {children}
+      </main>
+
+      <Footer />
+
+    </div>
   );
 }
 
@@ -306,8 +342,10 @@ function AdminSidebar() {
 
   function logout() {
     localStorage.removeItem("pc_token");
+
     navigate("/");
   }
+
 
   function isActive(path) {
     return (
@@ -315,6 +353,7 @@ function AdminSidebar() {
       location.pathname.startsWith(`${path}/`)
     );
   }
+
 
   return (
     <aside className="admin-sidebar">
@@ -328,6 +367,7 @@ function AdminSidebar() {
           <BrandMark />
 
           <span className="admin-brand-text">
+
             <strong>
               PolarConnect
             </strong>
@@ -335,11 +375,14 @@ function AdminSidebar() {
             <small>
               NCPOR · Polar &amp; Ocean Research
             </small>
+
           </span>
         </Link>
 
 
         <nav className="admin-sidebar-nav">
+
+          {/* Dashboard */}
 
           <NavLink
             to="/admin/dashboard"
@@ -362,6 +405,8 @@ function AdminSidebar() {
           </NavLink>
 
 
+          {/* Upload */}
+
           <NavLink
             to="/admin/upload"
             className={
@@ -382,6 +427,8 @@ function AdminSidebar() {
             </span>
           </NavLink>
 
+
+          {/* Manage Content */}
 
           <NavLink
             to="/admin/content"
@@ -404,6 +451,8 @@ function AdminSidebar() {
           </NavLink>
 
 
+          {/* Pages */}
+
           <NavLink
             to="/sitemap"
             className={
@@ -425,6 +474,8 @@ function AdminSidebar() {
           </NavLink>
 
 
+          {/* Media Library */}
+
           <NavLink
             to="/admin/content"
             className="admin-sidebar-link"
@@ -438,6 +489,8 @@ function AdminSidebar() {
             </span>
           </NavLink>
 
+
+          {/* Sitemap */}
 
           <NavLink
             to="/sitemap"
@@ -460,8 +513,11 @@ function AdminSidebar() {
           </NavLink>
 
         </nav>
+
       </div>
 
+
+      {/* Logout */}
 
       <button
         type="button"
@@ -510,6 +566,8 @@ function AdminTopbar() {
 
       <div className="admin-topbar-right">
 
+        {/* Notifications */}
+
         <button
           type="button"
           className="admin-notification"
@@ -523,9 +581,12 @@ function AdminTopbar() {
         </button>
 
 
+        {/* Admin profile */}
+
         <button
           type="button"
           className="admin-profile"
+          aria-label="Admin profile"
         >
           <span className="admin-profile-avatar">
             A
@@ -612,6 +673,8 @@ function PublicNavbar() {
 
       <div className="navbar-inner">
 
+        {/* Public brand */}
+
         <Link
           to="/"
           className="brand"
@@ -633,6 +696,8 @@ function PublicNavbar() {
         </Link>
 
 
+        {/* Mobile menu button */}
+
         <button
           className="nav-toggle"
           type="button"
@@ -653,6 +718,8 @@ function PublicNavbar() {
           <span />
         </button>
 
+
+        {/* Navigation links */}
 
         <div
           className={
@@ -708,6 +775,7 @@ function PublicNavbar() {
                 aria-hidden="true"
               />
 
+
               <NavLink
                 to="/admin/dashboard"
                 className={navClass}
@@ -760,56 +828,137 @@ function PublicNavbar() {
 
 
 /* =========================================================
-   APP
+   APP ROUTES
 ========================================================= */
 
 export default function App() {
   return (
-    <div className="app-shell">
-      <Navbar />
-      <main className="main-content">
-        <Routes>
-          <Route path="/" element={<PublicPortal />} />
-          <Route path="/content/:id" element={<ContentDetail />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/sitemap" element={<Sitemap />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route
-            path="/admin/dashboard"
-            element={
-              <RequireAuth>
-                <AdminDashboard />
-              </RequireAuth>
-            }
+    <Routes>
+
+      {/* =====================================================
+          PUBLIC ROUTES
+      ===================================================== */}
+
+      <Route
+        path="/"
+        element={
+          <PublicLayout>
+            <PublicPortal />
+          </PublicLayout>
+        }
+      />
+
+
+      <Route
+        path="/content/:id"
+        element={
+          <PublicLayout>
+            <ContentDetail />
+          </PublicLayout>
+        }
+      />
+
+
+      <Route
+        path="/about"
+        element={
+          <PublicLayout>
+            <About />
+          </PublicLayout>
+        }
+      />
+
+
+      <Route
+        path="/contact"
+        element={
+          <PublicLayout>
+            <Contact />
+          </PublicLayout>
+        }
+      />
+
+
+      <Route
+        path="/sitemap"
+        element={
+          <PublicLayout>
+            <Sitemap />
+          </PublicLayout>
+        }
+      />
+
+
+      {/* =====================================================
+          ADMIN LOGIN
+      ===================================================== */}
+
+      <Route
+        path="/admin/login"
+        element={
+          <AdminLogin />
+        }
+      />
+
+
+      {/* =====================================================
+          PROTECTED ADMIN ROUTES
+      ===================================================== */}
+
+      <Route
+        path="/admin/dashboard"
+        element={
+          <RequireAuth>
+            <AdminDashboard />
+          </RequireAuth>
+        }
+      />
+
+
+      <Route
+        path="/admin/upload"
+        element={
+          <RequireAuth>
+            <AdminUpload />
+          </RequireAuth>
+        }
+      />
+
+
+      <Route
+        path="/admin/content"
+        element={
+          <RequireAuth>
+            <AdminContentList />
+          </RequireAuth>
+        }
+      />
+
+
+      <Route
+        path="/admin/content/:id/edit"
+        element={
+          <RequireAuth>
+            <AdminEditContent />
+          </RequireAuth>
+        }
+      />
+
+
+      {/* =====================================================
+          FALLBACK
+      ===================================================== */}
+
+      <Route
+        path="*"
+        element={
+          <Navigate
+            to="/"
+            replace
           />
-          <Route
-            path="/admin/upload"
-            element={
-              <RequireAuth>
-                <AdminUpload />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/admin/content"
-            element={
-              <RequireAuth>
-                <AdminContentList />
-              </RequireAuth>
-            }
-          />
-          <Route
-            path="/admin/content/:id/edit"
-            element={
-              <RequireAuth>
-                <AdminEditContent />
-              </RequireAuth>
-            }
-          />
-        </Routes>
-      </main>
-      <Footer/>
-    </div>
+        }
+      />
+
+    </Routes>
   );
 }
