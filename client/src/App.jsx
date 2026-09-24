@@ -17,7 +17,7 @@ import Privacy from "./pages/Privacy.jsx";
 import Terms from "./pages/Terms.jsx";
 import "./admin.css";
 function isLoggedIn() {
-  return Boolean(localStorage.getItem("pc_token"));
+  return Boolean(sessionStorage.getItem("pc_token"));
 }
 
 // Small compass-rose mark used as the brand icon — nods to expedition
@@ -39,7 +39,7 @@ function Navbar() {
   const loggedIn = isLoggedIn();
 
   const logout = () => {
-    localStorage.removeItem("pc_token");
+    sessionStorage.removeItem("pc_token");
     setMenuOpen(false);
     navigate("/");
   };
@@ -200,4 +200,4 @@ export default function App() {
       <Footer/>
     </div>
   );
-}
+}s

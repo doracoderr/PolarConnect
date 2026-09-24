@@ -22,7 +22,7 @@ export default function AdminLogin() {
         password,
       });
 
-      localStorage.setItem("pc_token", data.token);
+      sessionStorage.setItem("pc_token", data.token);
 
       navigate("/admin/dashboard");
     } catch (err) {
