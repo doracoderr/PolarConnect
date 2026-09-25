@@ -3,24 +3,40 @@ export default function About() {
     <div className="container">
       <section className="hero">
         <h1>About PolarConnect</h1>
-        <p>A public outreach portal for NCPOR's polar and ocean science expeditions.</p>
+        <p>
+          An integrated outreach and knowledge platform for
+          India's polar and ocean research.
+        </p>
       </section>
 
       <div className="about-content">
         <p>
-          PolarConnect is built for the National Centre for Polar and Ocean Research
-          (NCPOR), Ministry of Earth Sciences, to make expedition reports, photographs
-          and videos from Antarctica, the Arctic and the Himalaya freely searchable by
-          the public — students, researchers and citizens alike.
+          PolarConnect is a public outreach and knowledge repository
+          designed for the National Centre for Polar and Ocean Research
+          (NCPOR), Ministry of Earth Sciences. It brings polar expedition
+          reports, datasets, photographs, videos, and other research
+          content together in one searchable platform.
         </p>
+
         <p>
-          Field teams and NCPOR administrators upload expedition media through a
-          secure admin panel; each item is auto-summarized, tagged and published to
-          the searchable gallery you see on the Home page.
+          The platform helps make India's polar research more accessible
+          to students, researchers, and the public. Content can be
+          uploaded and organized by authorized admin, enriched with
+          structured information, reviewed, and then published through
+          the public portal.
         </p>
+
         <p>
-          This project was built as Smart India Hackathon 2026 submission SIH26063
-          (theme: Smart Education) by Team The PARIKALP.
+          PolarConnect connects the complete content workflow — from
+          expedition media upload and content preparation to review,
+          approval, and public dissemination — helping improve the
+          discoverability and outreach of polar-science knowledge.
+        </p>
+
+        <p>
+          This project was developed as a Smart India Hackathon 2026
+          submission (SIH26063) under the Smart Education theme by
+          Team The PARIKALP.
         </p>
       </div>
     </div>
