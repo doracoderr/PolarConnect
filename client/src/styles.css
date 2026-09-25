@@ -77,9 +77,16 @@ body { margin: 0; font-family: system-ui, sans-serif; color: var(--text); backgr
     box-shadow: 0 8px 14px rgba(4,20,32,0.18);
   }
   .nav-links.is-open { max-height: 400px; opacity: 1; }
-  .nav-link, .nav-button { width: 100%; box-sizing: border-box; text-align: left; }
+  .nav-links .nav-link, .nav-links .nav-button { width: 100%; box-sizing: border-box; text-align: left; }
   .nav-admin-group { flex-direction: column; align-items: stretch; }
   .nav-divider { display: none; }
+
+  .home-hero .hero-actions { flex-wrap: nowrap; gap: 8px; }
+  .home-hero .hero-actions .nav-button,
+  .home-hero .hero-actions .nav-button-outline {
+    width: auto; flex: 1 1 0; text-align: center;
+    padding-left: 8px; padding-right: 8px; font-size: 0.85rem;
+  }
 }
 
 .main-content { flex: 1; }

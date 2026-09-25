@@ -248,6 +248,8 @@ function LoadingSkeleton() {
 export default function AdminContentList() {
   const [items, setItems] = useState(null);
   const [error, setError] = useState("");
+  const [busyId, setBusyId] = useState(null);
+  const [filter, setFilter] = useState("all");
 
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
@@ -406,14 +408,8 @@ export default function AdminContentList() {
     setSelected(new Set());
   }
 
-  function toggleSelect(id) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
+    try {
+      await api.patch(`/content/${item._id}/fix-type`);
 
   function toggleSelectPage() {
     setSelected((prev) => {
@@ -550,174 +546,233 @@ export default function AdminContentList() {
 
   if (error) {
     return (
-      <div className="admin-content-page mc-page">
-        {header}
-        <div className="mc-card mc-empty" role="alert">
-          <div className="mc-empty-icon" aria-hidden="true">⚠️</div>
-          <h3>Something went wrong</h3>
-          <p>{error}</p>
-          <button type="button" className="mc-btn mc-btn-primary" onClick={load}>
-            Try again
-          </button>
-        </div>
+      <div className="container">
+        <p className="status status-error">{error}</p>
       </div>
     );
   }
 
   if (!items) {
     return (
-      <div className="admin-content-page mc-page">
-        {header}
-        <LoadingSkeleton />
+      <div className="container">
+        <p className="status">Loading...</p>
       </div>
     );
   }
 
-  /* ----- main render ----- */
+  const filteredItems = items.filter((item) => {
+    if (filter === "published") {
+      return item.approvedForDisplay;
+    }
 
-  const tabs = [
-    { key: "all", label: "All", count: counts.all },
-    { key: "published", label: "Published", count: counts.published },
-    { key: "draft", label: "Drafts", count: counts.draft },
-  ];
+    if (filter === "draft") {
+      return !item.approvedForDisplay;
+    }
+
+    return true;
+  });
 
   return (
-    <div className="admin-content-page mc-page">
-      {header}
+    <div className="container admin-content-page">
+      <section className="admin-hero">
+        <div>
+          <p className="admin-eyebrow">POLARCONNECT ADMIN</p>
 
-      <section className="mc-card">
-        {/* status tabs */}
-        <div className="mc-tabs" role="tablist" aria-label="Filter by status">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={filters.status === t.key}
-              className={"mc-tab" + (filters.status === t.key ? " is-active" : "")}
-              onClick={() => updateFilter({ status: t.key })}
-            >
-              {t.label}
-              <span className="mc-tab-count">{t.count}</span>
-            </button>
-          ))}
+          <h1>Manage Content</h1>
+
+          <p className="admin-hero-description">
+            Manage and publish your PolarConnect content.
+          </p>
         </div>
 
-        {items.length === 0 ? (
-          <div className="mc-empty">
-            <div className="mc-empty-icon" aria-hidden="true">🗂️</div>
-            <h3>No Content Yet</h3>
-            <p>No content has been uploaded yet.</p>
-            <Link to="/admin/upload" className="mc-btn mc-btn-primary">
-              Go to Upload Page
-            </Link>
+        <div className="admin-content-count">
+          <span>{items.length}</span>
+          <small>Total Content</small>
+        </div>
+      </section>
+
+      <section className="admin-section">
+        <div className="admin-section-header">
+          <div>
+            
+          </div>
+
+          <Link
+            to="/admin/upload"
+            className="admin-primary-link"
+          >
+            Go to Upload Page
+          </Link>
+        </div>
+
+        <div className="admin-filter-bar">
+          <label htmlFor="content-filter">
+            Filter:
+          </label>
+
+          <select
+            id="content-filter"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            <option value="all">All Content</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
+          </select>
+        </div>
+
+        {filteredItems.length === 0 ? (
+          <div className="admin-empty-state">
+            <div
+              className="admin-empty-icon"
+              aria-hidden="true"
+            >
+              🗂️
+            </div>
+
+            <h3>
+              {filter === "published"
+                ? "No Published Content"
+                : filter === "draft"
+                  ? "No Draft Content"
+                  : "No Content Yet"}
+            </h3>
+
+            <p>
+              {filter === "published"
+                ? "There are no published items."
+                : filter === "draft"
+                  ? "There are no draft items."
+                  : "No content has been uploaded yet."}
+            </p>
+
+            {filter === "all" && (
+              <Link
+                to="/admin/upload"
+                className="admin-primary-link"
+              >
+                Go to Upload Page
+              </Link>
+            )}
           </div>
         ) : (
-          <>
-            {/* bulk bar */}
-            {selectedItems.length > 0 && (
-              <div className="mc-bulk" role="region" aria-label="Bulk actions">
-                <strong>{selectedItems.length} selected</strong>
+          <div className="admin-table-card">
+            <div className="admin-table-wrapper">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
 
-                <div className="mc-bulk-actions">
-                  <button type="button" className="mc-btn mc-btn-small" onClick={() => setPublished(selectedItems, true)}>
-                    Publish
-                  </button>
-                  <button type="button" className="mc-btn mc-btn-small" onClick={() => setPublished(selectedItems, false)}>
-                    Unpublish
-                  </button>
-                  <button type="button" className="mc-btn mc-btn-small mc-btn-danger-outline" onClick={() => requestDelete(selectedItems)}>
-                    Delete
-                  </button>
-                  <button type="button" className="mc-btn mc-btn-small mc-btn-ghost" onClick={() => setSelected(new Set())}>
-                    Clear
-                  </button>
-                </div>
-              </div>
-            )}
+                <tbody>
+                  {filteredItems.map((item) => {
+                    const isBusy = busyId === item._id;
 
-            {/* list */}
-            {filtered.length === 0 ? (
-              <div className="mc-empty">
-                <div className="mc-empty-icon" aria-hidden="true">🔎</div>
-                <h3>{emptyTitle}</h3>
-                <p>{emptyText}</p>
-                <button type="button" className="mc-btn" onClick={resetFilters}>
-                  Clear filters
-                </button>
-              </div>
-            ) : (
-              <div className="mc-table" role="table" aria-label="Content library">
-                <div className="mc-row mc-row-head" role="row">
-                  <div role="columnheader" className="mc-check">
-                    <input
-                      ref={headCheckRef}
-                      type="checkbox"
-                      checked={allOnPageSelected}
-                      onChange={toggleSelectPage}
-                      aria-label="Select all items on this page"
-                    />
-                  </div>
-                  <div role="columnheader" className="mc-main">Content</div>
-                  <div className="mc-meta">
-                    <div role="columnheader" className="mc-cell">Category</div>
-                    <div role="columnheader" className="mc-cell">Type</div>
-                    <div role="columnheader" className="mc-cell">Status</div>
-                    <div role="columnheader" className="mc-cell">Added</div>
-                  </div>
-                  <div role="columnheader" className="mc-actions">Actions</div>
-                </div>
+                    return (
+                      <tr key={item._id}>
+                        <td>
+                          <div className="admin-content-title">
+                            {item.title}
+                          </div>
+                        </td>
 
-                {pageItems.map((item) => (
-                  <ContentRow
-                    key={item._id}
-                    item={item}
-                    isSelected={selected.has(item._id)}
-                    isBusy={busy.has(item._id)}
-                    onSelect={toggleSelect}
-                    onTogglePublish={(i) => setPublished([i], !i.approvedForDisplay)}
-                    onDelete={(i) => requestDelete([i])}
-                    onFixType={fixType}
-                  />
-                ))}
-              </div>
-            )}
+                        <td>
+                          <span className="admin-category">
+                            {item.category}
+                          </span>
+                        </td>
 
-            {/* footer / pagination */}
-            {filtered.length > 0 && (
-              <footer className="mc-footer">
-                <span className="mc-count">
-                  Showing {pageStart + 1}–{pageStart + pageItems.length} of{" "}
-                  {plural(filtered.length, "item")}
-                  {filtersActive && ` (filtered from ${counts.all})`}
-                </span>
+                        <td>
+                          <span className="admin-type">
+                            {item.mediaType}
+                          </span>
+                        </td>
 
-                {totalPages > 1 && (
-                  <nav className="mc-pager" aria-label="Pagination">
-                    <button
-                      type="button"
-                      className="mc-btn mc-btn-small"
-                      disabled={safePage === 1}
-                      onClick={() => goToPage(safePage - 1)}
-                    >
-                      ← Prev
-                    </button>
-                    <span>
-                      Page {safePage} of {totalPages}
-                    </span>
-                    <button
-                      type="button"
-                      className="mc-btn mc-btn-small"
-                      disabled={safePage === totalPages}
-                      onClick={() => goToPage(safePage + 1)}
-                    >
-                      Next →
-                    </button>
-                  </nav>
-                )}
-              </footer>
-            )}
-          </>
+                        <td>
+                          <span
+                            className={`badge ${
+                              item.approvedForDisplay
+                                ? "badge-live"
+                                : "badge-draft"
+                            }`}
+                          >
+                            {item.approvedForDisplay
+                              ? "Published"
+                              : "Draft"}
+                          </span>
+                        </td>
+
+                        <td>
+                          <div className="admin-actions">
+                            <a
+                              href={item.viewUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="admin-action-link"
+                            >
+                              View
+                            </a>
+
+                            <Link
+                              to={`/admin/content/${item._id}/edit`}
+                              className="admin-action-link"
+                            >
+                              Edit
+                            </Link>
+
+                            {item.mediaType === "image" && (
+                              <button
+                                type="button"
+                                className="link-button"
+                                disabled={isBusy}
+                                onClick={() =>
+                                  fixMediaType(item)
+                                }
+                                title="If this is a PDF/document marked as image, click to fix"
+                              >
+                                {isBusy
+                                  ? "Working..."
+                                  : "Fix Type"}
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              className="link-button"
+                              disabled={isBusy}
+                              onClick={() =>
+                                togglePublish(item)
+                              }
+                            >
+                              {isBusy
+                                ? "Working..."
+                                : item.approvedForDisplay
+                                  ? "Unpublish"
+                                  : "Publish"}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="link-button link-danger"
+                              disabled={isBusy}
+                              onClick={() => remove(item)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </section>
 
