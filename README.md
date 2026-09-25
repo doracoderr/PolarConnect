@@ -99,6 +99,34 @@ EMAIL_TO=
 PUBLIC_SITE_URL=
 ```
 
+## Local AI summary (offline, no Gemini API key)
+
+`server/src/controllers/content.controller.js` now uses `summary.local.service.js`
+instead of Gemini. Everything runs on-device via `@huggingface/transformers`.
+
+**Install (inside `server/`):**
+```
+npm install
+```
+This pulls in the new dependencies already added to `package.json`:
+`@huggingface/transformers`, `pdf-parse`, `mammoth`, `wavefile`.
+
+**System requirement:** FFmpeg must be installed and on PATH (needed for video
+frame + audio extraction).
+- Windows: `choco install ffmpeg` or download from ffmpeg.org and add to PATH
+- Mac: `brew install ffmpeg`
+- Linux: `sudo apt install ffmpeg`
+
+Check it worked: `ffmpeg -version`
+
+**First run:** AI models (~1GB total) download automatically on first use and
+are cached in `server/.model-cache/` — no repeat downloads after that, works
+offline from then on. `.model-cache/` is git-ignored.
+
+**Old Gemini service:** `summary.service.js` is left untouched in the repo
+(unused now) in case you want to switch back — just revert the one import
+line in `content.controller.js`.
+
 ## References
 
 - NCPOR — https://ncpor.res.in
