@@ -6,10 +6,10 @@ const { signMediaToken } = require("../utils/mediaToken");
 // Attaches a short-lived viewUrl (our own /api/media/:id proxy) to a
 // content item, and strips out the real Cloudinary mediaUrl/publicId
 // before it's ever sent to a public-facing client.
-function toPublicJSON(content) {
+function toPublicJSON(content, { preview = false } = {}) {
   const obj = content.toObject ? content.toObject() : { ...content };
   const base = process.env.PUBLIC_API_URL || "/api";
-  obj.viewUrl = `${base}/media/${obj._id}?token=${signMediaToken(obj._id)}`;
+  obj.viewUrl = `${base}/media/${obj._id}?token=${signMediaToken(obj._id, { preview })}`;
   delete obj.mediaUrl;
   delete obj.cloudinaryPublicId;
   return obj;
@@ -127,7 +127,7 @@ async function listContent(req, res) {
     ]);
 
     return res.json({
-      items: items.map(toPublicJSON),
+      items: items.map((item) => toPublicJSON(item)),
       total,
       page: Number(page),
       limit: hasLimit ? Number(limit) : total,
@@ -156,7 +156,7 @@ async function getContentById(req, res) {
 async function listAllForAdmin(req, res) {
   try {
     const items = await Content.find().sort({ createdAt: -1 });
-    return res.json({ items: items.map(toPublicJSON) });
+    return res.json({ items: items.map((item) => toPublicJSON(item, { preview: true })) });
   } catch (err) {
     console.error("[content] admin list error:", err.message);
     return res.status(500).json({ message: "Server error while fetching content" });
@@ -181,7 +181,7 @@ async function updateContent(req, res) {
 
     if (isNowPublishing) sendUploadConfirmation(content); // fire-and-forget, on actual publish
 
-    return res.json({ content: toPublicJSON(content) });
+    return res.json({ content: toPublicJSON(content, { preview: true }) });
   } catch (err) {
     console.error("[content] update error:", err.message);
     return res.status(500).json({ message: "Server error while updating content" });
@@ -209,7 +209,7 @@ async function fixMediaType(req, res) {
       { new: true }
     );
     if (!content) return res.status(404).json({ message: "Content not found" });
-    return res.json({ content: toPublicJSON(content), message: "Media type fixed to 'document'" });
+    return res.json({ content: toPublicJSON(content, { preview: true }), message: "Media type fixed to 'document'" });
   } catch (err) {
     console.error("[content] fix-type error:", err.message);
     return res.status(500).json({ message: "Server error while fixing media type" });

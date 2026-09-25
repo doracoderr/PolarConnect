@@ -23,6 +23,7 @@ import AdminContentList from "./pages/AdminContentList.jsx";
 import AdminEditContent from "./pages/AdminEditContent.jsx";
 import Sitemap from "./pages/Sitemap.jsx";
 import Footer from "./components/footer.jsx";
+import BrandMark from "./components/BrandMark.jsx";
 import Privacy from "./pages/Privacy.jsx";
 import Terms from "./pages/Terms.jsx";
 
