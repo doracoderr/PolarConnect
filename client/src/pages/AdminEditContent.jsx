@@ -143,6 +143,39 @@ export default function AdminEditContent() {
         </p>
       </section>
 
+      <section className="admin-form-section">
+        <h2>Current Media Preview</h2>
+        {item.mediaType === "image" ? (
+          <img
+            src={item.viewUrl}
+            alt={item.title}
+            className="detail-media"
+          />
+        ) : item.mediaType === "video" ? (
+          <video src={item.viewUrl} controls className="detail-media" />
+        ) : (
+          <div className="document-view">
+            <p className="doc-note">📄 Document / Report</p>
+            <iframe
+              src={item.viewUrl}
+              title={item.title}
+              className="doc-embed"
+            />
+            <a
+              href={item.viewUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="doc-link"
+            >
+              📥 View / Download Document
+            </a>
+          </div>
+        )}
+        <span className={`mc-status ${item.approvedForDisplay ? "is-live" : "is-draft"}`}>
+          {item.approvedForDisplay ? "Published" : "Draft"}
+        </span>
+      </section>
+
       <form
         className="form admin-edit-form"
         onSubmit={handleSubmit}

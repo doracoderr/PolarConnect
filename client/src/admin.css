@@ -4518,17 +4518,6 @@ body.admin-sidebar-lock {
    NAV LINKS
    ========================================================= */
 
-   @media (max-width: 760px) {
-    .nav-links .nav-link, .nav-links .nav-button {
-        width: 100%;
-        box-sizing: border-box;
-        text-align: left;
-        margin-top: -6px;}}
-
-
-        
-        
-
 .nav-links {
   display: flex;
   align-items: center;
@@ -4879,8 +4868,6 @@ body.admin-sidebar-lock {
 
   .navbar {
     height: 70px;
-    position: relative;
-    z-index: 1000;
   }
 
   .navbar-inner {

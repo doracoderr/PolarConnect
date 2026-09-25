@@ -98,6 +98,11 @@ export default function ContentDetail() {
       ) : (
         <div className="document-view">
           <p className="doc-note">📄 Document / Report</p>
+          <iframe
+            src={item.viewUrl}
+            title={item.title}
+            className="doc-embed"
+          />
           <a href={item.viewUrl} target="_blank" rel="noreferrer" className="doc-link">
             📥 View / Download Document
           </a>

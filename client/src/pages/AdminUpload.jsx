@@ -751,6 +751,11 @@ export default function AdminUpload() {
                   ) : (
                     <div className="document-view">
                       <p className="doc-note">📄 Document / Report</p>
+                      <iframe
+                        src={uploaded.url}
+                        title={title}
+                        className="doc-embed"
+                      />
                       <a
                         href={uploaded.url}
                         target="_blank"

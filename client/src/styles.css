@@ -323,6 +323,16 @@ body { margin: 0; font-family: system-ui, sans-serif; color: var(--text); backgr
   cursor: pointer;
 }
 .doc-link:hover { background: #16717f; text-decoration: none; }
+
+.doc-embed {
+  width: 100%;
+  height: 70vh;
+  min-height: 420px;
+  border: 1px solid #d8e2e8;
+  border-radius: 6px;
+  background: #fff;
+  margin-bottom: 14px;
+}
 .sitemap-footer-note { margin-top: 24px; font-size: 0.85rem; }
 /* Privacy & Terms pages */
 
