@@ -1,5 +1,5 @@
 const Content = require("../models/Content");
-const { generateSummary } = require("../services/summary.service");
+const { generateSummaryLocal: generateSummary } = require("../services/summary.local.service");
 const { sendUploadConfirmation } = require("../services/email.service");
 const { signMediaToken } = require("../utils/mediaToken");
 

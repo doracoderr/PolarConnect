@@ -28,9 +28,16 @@ export async function uploadToCloudinary(file, onProgress) {
   form.append("folder", sig.folder);
   form.append("resource_type", resourceType); // ← EXPLICITLY SET
 
+  // IMPORTANT: Cloudinary decides how to treat the file based on the
+  // resource_type segment in the URL path, not the resource_type form
+  // field. Posting to /auto/upload made Cloudinary auto-detect the type
+  // itself — and it classifies PDFs as "image" (since it can generate
+  // image thumbnails from them), which silently overrode the resourceType
+  // computed above and broke downstream processing for PDFs. Use the
+  // computed resourceType in the URL so it's actually honored.
   const uploadUrl =
     import.meta.env.VITE_CLOUDINARY_UPLOAD_URL ||
-    `https://api.cloudinary.com/v1_1/${sig.cloudName}/auto/upload`;
+    `https://api.cloudinary.com/v1_1/${sig.cloudName}/${resourceType}/upload`;
 
   const res = await fetch(uploadUrl, { method: "POST", body: form });
   if (!res.ok) {
