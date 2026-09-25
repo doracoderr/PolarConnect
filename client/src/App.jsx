@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Routes, Route, Link, NavLink, useNavigate, useLocation, useParams } from "react-router-dom";
+import { Routes, Route, Link, NavLink, Navigate, useNavigate, useLocation, useParams } from "react-router-dom";
 import PublicPortal from "./pages/PublicPortal.jsx";
 import Home from "./pages/Home.jsx";
 import ContentDetail from "./pages/ContentDetail.jsx";
@@ -13,23 +13,12 @@ import AdminContentList from "./pages/AdminContentList.jsx";
 import AdminEditContent from "./pages/AdminEditContent.jsx";
 import Sitemap from "./pages/Sitemap.jsx";
 import Footer from "./components/footer.jsx";
+import BrandMark from "./components/BrandMark.jsx";
 import Privacy from "./pages/Privacy.jsx";
 import Terms from "./pages/Terms.jsx";
 import "./admin.css";
 function isLoggedIn() {
   return Boolean(localStorage.getItem("pc_token"));
-}
-
-// Small compass-rose mark used as the brand icon — nods to expedition
-// navigation without leaning on a stock snowflake/globe emoji.
-function BrandMark() {
-  return (
-    <svg className="brand-mark" width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-      <circle cx="13" cy="13" r="11.5" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M13 4.5L15.2 11.4 13 21.5 10.8 11.4 13 4.5Z" fill="currentColor" />
-      <circle cx="13" cy="13" r="1.6" fill="var(--navy)" />
-    </svg>
-  );
 }
 
 function Navbar() {
@@ -136,10 +125,10 @@ function ExpeditionDetail() {
 }
 
 function RequireAuth({ children }) {
-  const navigate = useNavigate();
+  const location = useLocation();
   if (!isLoggedIn()) {
-    navigate("/admin/login");
-    return null;
+    // Remember where the admin was heading so login can send them back.
+    return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />;
   }
   return children;
 }
