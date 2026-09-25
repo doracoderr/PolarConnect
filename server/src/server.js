@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
 const connectDB = require("./config/db");
 
 const authRoutes = require("./routes/auth.routes");
@@ -11,8 +12,17 @@ const mediaRoutes = require("./routes/media.routes");
 
 const app = express();
 
-app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
+// credentials:true + a specific origin are required together — cookies are
+// never sent cross-origin if origin is "*". Set CLIENT_URL in .env to your
+// deployed frontend URL (e.g. https://polarconnect.vercel.app) in production.
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 app.get("/api/health", (req, res) => res.json({ status: "ok", service: "polarconnect-api" }));
 

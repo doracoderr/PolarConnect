@@ -54,7 +54,12 @@ export default function AdminLogin() {
         password,
       });
 
-      sessionStorage.setItem("pc_token", data.token);
+      // The real token is now set by the server as an httpOnly cookie —
+      // it never appears in this response body, so it can't be stored or
+      // read here. This flag is only a UI hint for showing admin nav links;
+      // every actual protected request is still verified server-side
+      // against the cookie.
+      sessionStorage.setItem("pc_logged_in", "true");
       sessionStorage.setItem("pc_admin_name", data.admin?.name || "");
       sessionStorage.setItem("pc_admin_email", data.admin?.email || "");
       sessionStorage.setItem("pc_admin_role", data.admin?.role || "");

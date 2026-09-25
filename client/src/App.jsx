@@ -26,11 +26,24 @@ import Footer from "./components/footer.jsx";
 import BrandMark from "./components/BrandMark.jsx";
 import Privacy from "./pages/Privacy.jsx";
 import Terms from "./pages/Terms.jsx";
+import api from "./api/client.js";
 
 import "./admin.css";
 
+// This only reflects a UI hint set at login — the actual token lives in an
+// httpOnly cookie the server manages, never readable from here. Real
+// authorization is enforced server-side on every request; this just avoids
+// flashing admin nav links to a logged-out visitor.
 function isLoggedIn() {
-  return Boolean(sessionStorage.getItem("pc_token"));
+  return Boolean(sessionStorage.getItem("pc_logged_in"));
+}
+
+function clearAuthFlags() {
+  sessionStorage.removeItem("pc_logged_in");
+  sessionStorage.removeItem("pc_admin_email");
+  sessionStorage.removeItem("pc_admin_name");
+  sessionStorage.removeItem("pc_admin_avatar");
+  sessionStorage.removeItem("pc_admin_role");
 }
 
 /* =========================================================
@@ -49,11 +62,10 @@ function Navbar() {
   const loggedIn = isLoggedIn();
 
   const logout = () => {
-    sessionStorage.removeItem("pc_token");
-    sessionStorage.removeItem("pc_admin_email");
-    sessionStorage.removeItem("pc_admin_name");
-    sessionStorage.removeItem("pc_admin_avatar");
-    sessionStorage.removeItem("pc_admin_role");
+    // Ask the server to clear the httpOnly cookie — it can't be removed
+    // from client JS. Clear the local UI flags regardless of the result.
+    api.post("/auth/logout").catch(() => {});
+    clearAuthFlags();
 
     setMenuOpen(false);
     navigate("/");
@@ -876,11 +888,8 @@ function AdminTopbar({
     });
 
   const logout = () => {
-    sessionStorage.removeItem("pc_token");
-    sessionStorage.removeItem("pc_admin_email");
-    sessionStorage.removeItem("pc_admin_name");
-    sessionStorage.removeItem("pc_admin_avatar");
-    sessionStorage.removeItem("pc_admin_role");
+    api.post("/auth/logout").catch(() => {});
+    clearAuthFlags();
 
     setProfileOpen(false);
     navigate("/");

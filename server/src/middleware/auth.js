@@ -7,11 +7,15 @@ const Admin = require("../models/Admin");
  */
 async function requireAuth(req, res, next) {
   try {
+    // Cookie is the source of truth now (httpOnly, so JS can't touch it).
+    // The Authorization header is kept as a fallback so any non-browser
+    // client (e.g. a Postman/API test) can still authenticate explicitly.
     const header = req.headers.authorization || "";
-    const token = header.startsWith("Bearer ") ? header.slice(7) : null;
+    const headerToken = header.startsWith("Bearer ") ? header.slice(7) : null;
+    const token = req.cookies?.pc_token || headerToken;
 
     if (!token) {
-      return res.status(401).json({ message: "Missing or invalid Authorization header" });
+      return res.status(401).json({ message: "Not authenticated" });
     }
 
     const payload = jwt.verify(token, process.env.JWT_SECRET);
