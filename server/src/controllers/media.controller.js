@@ -1,5 +1,5 @@
 const Content = require("../models/Content");
-const { verifyMediaToken } = require("../utils/mediaToken");
+const { decodeMediaToken } = require("../utils/mediaToken");
 
 /**
  * GET /api/media/:id?token=...
@@ -21,19 +21,20 @@ async function streamMedia(req, res) {
 
     if (!token) return res.status(401).json({ message: "Missing view token" });
 
-    let tokenContentId;
+    let payload;
     try {
-      tokenContentId = verifyMediaToken(token);
+      payload = decodeMediaToken(token);
     } catch {
       return res.status(401).json({ message: "This view link has expired. Reload the page for a fresh one." });
     }
 
-    if (tokenContentId !== id) {
+    if (payload.cid !== id) {
       return res.status(403).json({ message: "Token does not match this content" });
     }
 
     const content = await Content.findById(id);
-    if (!content || !content.approvedForDisplay) {
+    // Drafts are only viewable with an admin-issued preview token.
+    if (!content || (!content.approvedForDisplay && !payload.preview)) {
       return res.status(404).json({ message: "Content not found" });
     }
 

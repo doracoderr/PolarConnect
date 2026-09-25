@@ -23,6 +23,7 @@ import AdminContentList from "./pages/AdminContentList.jsx";
 import AdminEditContent from "./pages/AdminEditContent.jsx";
 import Sitemap from "./pages/Sitemap.jsx";
 import Footer from "./components/footer.jsx";
+import BrandMark from "./components/BrandMark.jsx";
 import Privacy from "./pages/Privacy.jsx";
 import Terms from "./pages/Terms.jsx";
 
@@ -30,43 +31,6 @@ import "./admin.css";
 
 function isLoggedIn() {
   return Boolean(sessionStorage.getItem("pc_token"));
-}
-
-/* =========================================================
-   BRAND MARK
-   ========================================================= */
-
-function BrandMark() {
-  return (
-    <svg
-      className="brand-mark"
-      width="26"
-      height="26"
-      viewBox="0 0 26 26"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle
-        cx="13"
-        cy="13"
-        r="11.5"
-        stroke="currentColor"
-        strokeWidth="1.4"
-      />
-
-      <path
-        d="M13 4.5L15.2 11.4 13 21.5 10.8 11.4 13 4.5Z"
-        fill="currentColor"
-      />
-
-      <circle
-        cx="13"
-        cy="13"
-        r="1.6"
-        fill="var(--navy)"
-      />
-    </svg>
-  );
 }
 
 /* =========================================================
