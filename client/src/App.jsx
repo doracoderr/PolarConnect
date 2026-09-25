@@ -89,6 +89,7 @@ function Navbar() {
     sessionStorage.removeItem("pc_admin_email");
     sessionStorage.removeItem("pc_admin_name");
     sessionStorage.removeItem("pc_admin_avatar");
+    sessionStorage.removeItem("pc_admin_role");
 
     setMenuOpen(false);
     navigate("/");
@@ -667,18 +668,6 @@ function AdminSidebar({
   onToggle,
   onMobileClose,
 }) {
-  const navigate = useNavigate();
-
-  const logout = () => {
-    sessionStorage.removeItem("pc_token");
-    sessionStorage.removeItem("pc_admin_email");
-    sessionStorage.removeItem("pc_admin_name");
-    sessionStorage.removeItem("pc_admin_avatar");
-
-    onMobileClose();
-    navigate("/");
-  };
-
   const closeAfterNavigation = () => {
     onMobileClose();
   };
@@ -711,47 +700,27 @@ function AdminSidebar({
             <small>Admin Panel</small>
           </span>
         </Link>
+
+        <button
+          type="button"
+          className="admin-sidebar-mobile-close"
+          aria-label="Close navigation"
+          onClick={onMobileClose}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="m6 6 12 12M18 6 6 18"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
       </div>
-
-      {/* =================================================
-          ADMIN NAVIGATION
-          ================================================= */}
-
-      <nav
-        className="admin-sidebar-nav admin-sidebar-admin-nav"
-        aria-label="Admin navigation"
-      >
-        <NavLink
-          to="/admin/dashboard"
-          end
-          className={sidebarLinkClass}
-          title="Dashboard"
-          onClick={closeAfterNavigation}
-        >
-          <DashboardIcon />
-          <span>Dashboard</span>
-        </NavLink>
-
-        <NavLink
-          to="/admin/upload"
-          className={sidebarLinkClass}
-          title="Upload"
-          onClick={closeAfterNavigation}
-        >
-          <UploadIcon />
-          <span>Upload</span>
-        </NavLink>
-
-        <NavLink
-          to="/admin/content"
-          className={sidebarLinkClass}
-          title="Manage Content"
-          onClick={closeAfterNavigation}
-        >
-          <ContentIcon />
-          <span>Manage Content</span>
-        </NavLink>
-      </nav>
 
       {/* =================================================
           PUBLIC PORTAL
@@ -840,72 +809,51 @@ function AdminSidebar({
       </div>
 
       {/* =================================================
-          BOTTOM
+          ADMIN NAVIGATION
           ================================================= */}
 
-      <div className="admin-sidebar-bottom">
-        <button
-          type="button"
-          className="admin-sidebar-logout"
-          onClick={logout}
-          title="Logout"
-        >
-          <LogoutIcon />
-          <span>Logout</span>
-        </button>
+      <div className="admin-sidebar-admin-section">
+        <div className="admin-sidebar-section-title admin-sidebar-section-title-admin">
+          <span>Admin</span>
+        </div>
 
-        <button
-          type="button"
-          className="admin-sidebar-collapse"
-          onClick={() => {
-            if (mobileOpen) {
-              onMobileClose();
-            } else {
-              onToggle();
-            }
-          }}
-          aria-label={
-            collapsed
-              ? "Expand sidebar"
-              : "Collapse sidebar"
-          }
-          title={
-            collapsed
-              ? "Expand sidebar"
-              : "Collapse sidebar"
-          }
+        <nav
+          className="admin-sidebar-nav admin-sidebar-admin-nav"
+          aria-label="Admin navigation"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden="true"
+          <NavLink
+            to="/admin/dashboard"
+            end
+            className={sidebarLinkClass}
+            title="Dashboard"
+            onClick={closeAfterNavigation}
           >
-            {collapsed ? (
-              <path
-                d="m9 6 6 6-6 6"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ) : (
-              <path
-                d="m15 6-6 6 6 6"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            )}
-          </svg>
+            <DashboardIcon />
+            <span>Dashboard</span>
+          </NavLink>
 
-          <span>
-            {collapsed
-              ? "Expand sidebar"
-              : "Collapse sidebar"}
-          </span>
-        </button>
+          <NavLink
+            to="/admin/upload"
+            className={sidebarLinkClass}
+            title="Upload"
+            onClick={closeAfterNavigation}
+          >
+            <UploadIcon />
+            <span>Upload</span>
+          </NavLink>
+
+          <NavLink
+            to="/admin/content"
+            className={sidebarLinkClass}
+            title="Manage Content"
+            onClick={closeAfterNavigation}
+          >
+            <ContentIcon />
+            <span>Manage Content</span>
+          </NavLink>
+        </nav>
       </div>
+
     </aside>
   );
 }
@@ -940,6 +888,10 @@ function AdminTopbar({
     sessionStorage.getItem("pc_admin_avatar") ||
     "";
 
+  const adminRole =
+    sessionStorage.getItem("pc_admin_role") ||
+    "admin";
+
   useEffect(() => {
     setProfileOpen(false);
   }, [location.pathname]);
@@ -964,6 +916,7 @@ function AdminTopbar({
     sessionStorage.removeItem("pc_admin_email");
     sessionStorage.removeItem("pc_admin_name");
     sessionStorage.removeItem("pc_admin_avatar");
+    sessionStorage.removeItem("pc_admin_role");
 
     setProfileOpen(false);
     navigate("/");
@@ -1094,7 +1047,6 @@ function AdminTopbar({
 
             <span className="admin-profile-text">
               <strong>{adminName}</strong>
-              <small>{adminEmail}</small>
             </span>
 
             <svg
@@ -1131,9 +1083,30 @@ function AdminTopbar({
                 </span>
 
                 <div>
-                  <strong>{adminName}</strong>
                   <span>{adminEmail}</span>
                 </div>
+              </div>
+
+              <div className="admin-profile-menu-role">
+                <span className="admin-profile-menu-role-label">
+                  Role
+                </span>
+
+                <span className="admin-role-badge">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M12 3.5 19 6v5.4c0 4.3-2.8 7.9-7 9.1-4.2-1.2-7-4.8-7-9.1V6l7-2.5Z"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  {adminRole}
+                </span>
               </div>
 
               <div className="admin-profile-menu-divider" />

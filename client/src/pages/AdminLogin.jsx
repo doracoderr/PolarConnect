@@ -23,6 +23,9 @@ export default function AdminLogin() {
       });
 
       sessionStorage.setItem("pc_token", data.token);
+      sessionStorage.setItem("pc_admin_name", data.admin?.name || "");
+      sessionStorage.setItem("pc_admin_email", data.admin?.email || "");
+      sessionStorage.setItem("pc_admin_role", data.admin?.role || "");
 
       navigate("/admin/dashboard");
     } catch (err) {

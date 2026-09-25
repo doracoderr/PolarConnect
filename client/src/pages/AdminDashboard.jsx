@@ -31,6 +31,7 @@ const DEMO_CONTENT = [
 
 function getMediaUrl(item) {
   return (
+    item.viewUrl ||
     item.mediaUrl ||
     item.imageUrl ||
     item.fileUrl ||
@@ -268,6 +269,26 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* PUBLIC PORTAL */}
+      <section className="admin-public-portal-card">
+        <div>
+          <span className="admin-public-portal-icon">
+            🌐
+          </span>
+
+          <div>
+            <h2>View Public Portal</h2>
+            <p>
+              See PolarConnect the way a public visitor sees it.
+            </p>
+          </div>
+        </div>
+
+        <Link to="/" className="admin-public-portal-button">
+          Open Portal →
+        </Link>
+      </section>
+
       {/* STAT CARDS */}
       <section className="admin-stat-grid">
         <div className="admin-stat-card">
@@ -409,26 +430,6 @@ export default function AdminDashboard() {
             );
           })}
         </div>
-      </section>
-
-      {/* PUBLIC PORTAL */}
-      <section className="admin-public-portal-card">
-        <div>
-          <span className="admin-public-portal-icon">
-            🌐
-          </span>
-
-          <div>
-            <h2>View Public Portal</h2>
-            <p>
-              See PolarConnect the way a public visitor sees it.
-            </p>
-          </div>
-        </div>
-
-        <Link to="/" className="admin-public-portal-button">
-          Open Portal →
-        </Link>
       </section>
     </div>
   );
