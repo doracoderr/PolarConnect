@@ -53,6 +53,36 @@ function clearAuthFlags() {
    ========================================================= */
 
 
+function LanguageToggle() {
+  const [lang, setLang] = useState(localStorage.getItem("pc_lang") || "en");
+
+  const switchLang = (next) => {
+    if (next === lang) return;
+    localStorage.setItem("pc_lang", next);
+    setLang(next);
+    window.location.reload(); // simplest way to re-fetch every page's content in the new language
+  };
+
+  return (
+    <div className="lang-toggle" role="group" aria-label="Choose language">
+      <button
+        type="button"
+        className={"lang-toggle-btn" + (lang === "en" ? " is-active" : "")}
+        onClick={() => switchLang("en")}
+      >
+        EN
+      </button>
+      <button
+        type="button"
+        className={"lang-toggle-btn" + (lang === "hi" ? " is-active" : "")}
+        onClick={() => switchLang("hi")}
+      >
+        हिं
+      </button>
+    </div>
+  );
+}
+
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -196,6 +226,8 @@ function Navbar() {
           >
             Contact
           </NavLink>
+
+          <LanguageToggle />
 
           
 

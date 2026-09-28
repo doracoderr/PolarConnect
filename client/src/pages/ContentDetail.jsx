@@ -9,7 +9,8 @@ export default function ContentDetail() {
   const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
-    api.get(`/content/${id}`)
+    const lang = localStorage.getItem("pc_lang") || "en";
+    api.get(`/content/${id}`, { params: { lang } })
       .then(({ data }) => setItem(data.content))
       .catch(() => setError("This content could not be found."));
   }, [id]);
@@ -104,7 +105,11 @@ export default function ContentDetail() {
             className="doc-embed"
           />
           <a href={item.viewUrl} target="_blank" rel="noreferrer" className="doc-link">
-            📥 View / Download Document
+            👁 View Document
+          </a>
+          {" "}
+          <a href={`${item.viewUrl}&download=1`} className="doc-link">
+            📥 Download
           </a>
         </div>
       )}

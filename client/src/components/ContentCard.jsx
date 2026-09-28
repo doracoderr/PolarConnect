@@ -13,6 +13,7 @@ export default function ContentCard({ item }) {
       )}
       <div className="card-body">
         <span className="badge">{item.category}</span>
+        {item.contentType && <span className="badge">{item.contentType}</span>}
         <h3>{item.title}</h3>
         <p>{item.description}</p>
       </div>

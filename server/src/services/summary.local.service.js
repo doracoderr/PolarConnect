@@ -26,6 +26,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { execSync } = require("child_process");
+const T = require("./summaryText");
 
 let _pipelinePromise = null;
 function transformers() {
@@ -51,7 +52,14 @@ const MODELS = {
   caption: process.env.CAPTION_MODEL || "Xenova/vit-gpt2-image-captioning",
   summarizer: "Xenova/distilbart-cnn-6-6",
   asr: "Xenova/whisper-tiny.en",
+  // English -> Hindi MT model. Same offline/no-API-key story as the rest of
+  // this file; downloads once (~300MB) and is cached in .model-cache/.
+  // Default is small and light but weak on technical text. For clearly better
+  // Hindi set TRANSLATION_MODEL=Xenova/nllb-200-distilled-600M in .env
+  // (one-time ~600MB download, cached in .model-cache/).
+  translatorEnHi: process.env.TRANSLATION_MODEL || "Xenova/opus-mt-en-hi",
 };
+const IS_NLLB = /nllb/i.test(MODELS.translatorEnHi);
 
 // Generic phrases vit-gpt2/BLIP fall back to when they don't know what
 // they're looking at. A caption that is ONLY this (nothing else useful)
@@ -110,7 +118,7 @@ function isLowQualityCaption(caption) {
   return false;
 }
 
-let _captioner, _summarizer, _transcriber;
+let _captioner, _summarizer, _transcriber, _translatorEnHi;
 
 async function getCaptioner() {
   if (!_captioner) {
@@ -136,21 +144,111 @@ async function getTranscriber() {
   return _transcriber;
 }
 
+async function getTranslatorEnHi() {
+  if (!_translatorEnHi) {
+    const { pipeline } = await transformers();
+    _translatorEnHi = await pipeline(
+      "translation",
+      MODELS.translatorEnHi,
+      IS_NLLB ? { dtype: "q8" } : undefined // NLLB in fp32 is ~2.4GB; q8 is ~4x smaller
+    );
+  }
+  return _translatorEnHi;
+}
+
+// If the model can't be loaded (e.g. Windows "system error number 13" =
+// antivirus/OneDrive locking the .onnx file) don't retry on every upload.
+let _translatorDisabledUntil = 0;
+
+function noteTranslatorFailure(err) {
+  _translatorDisabledUntil = Date.now() + 5 * 60 * 1000;
+  const msg = err && err.message ? err.message : String(err);
+  console.log(`[localSummary] Hindi model unavailable, skipping for 5 min: ${msg}`);
+  if (/error number 13|EACCES|EPERM/i.test(msg)) {
+    console.log(
+      "[localSummary] hint: the OS is blocking the model file. Stop the server, delete server/.model-cache, " +
+        "exclude the project folder from antivirus/OneDrive, then start again."
+    );
+  }
+}
+
+/**
+ * Translate ONE English chunk (a few sentences) to Hindi, sentence by
+ * sentence, and keep only sentences that pass sanity checks. Returns "" if
+ * too little of it is trustworthy — callers then show the English text
+ * instead of wrong Hindi.
+ */
+async function translateCore(text) {
+  const sentences = T.splitSentences(text);
+  if (!sentences.length) return "";
+
+  let translator;
+  try {
+    translator = await getTranslatorEnHi();
+  } catch (err) {
+    noteTranslatorFailure(err);
+    return "";
+  }
+
+  const kept = [];
+  for (const sentence of sentences) {
+    try {
+      const opts = { max_new_tokens: 200, no_repeat_ngram_size: 3, repetition_penalty: 1.15, num_beams: 3 };
+      if (IS_NLLB) Object.assign(opts, { src_lang: "eng_Latn", tgt_lang: "hin_Deva" });
+      const out = await translator(sentence, opts);
+      const hi = out?.[0]?.translation_text?.trim() || "";
+      if (T.isGoodHindi(sentence, hi)) kept.push(hi);
+      else console.log(`[localSummary] rejected bad Hindi for: "${sentence.slice(0, 60)}"`);
+    } catch (err) {
+      console.log(`[localSummary] translate failed for one sentence: ${err.message}`);
+    }
+  }
+  return kept.length / sentences.length >= 0.6 ? kept.join(" ") : "";
+}
+
+/**
+ * English -> Hindi for a description or a social caption. Offline, best
+ * effort, never returns garbage: on any doubt returns "" so the API falls
+ * back to the English text.
+ *
+ * ctx (optional, for captions): { title, category } — the title is kept as
+ * the admin typed it (proper noun) and only the hook sentence is translated;
+ * if that can't be translated safely a correct template line is used.
+ */
+async function translateToHindi(text, ctx = {}) {
+  const trimmed = (text || "").trim();
+  if (!trimmed) return "";
+
+  const { lead, core, tags } = T.splitCaption(trimmed);
+  const disabled = Date.now() < _translatorDisabledUntil;
+
+  let title = ctx.title ? String(ctx.title).trim() : "";
+  let hook = core;
+  if (title && core.toLowerCase().startsWith(title.toLowerCase())) {
+    hook = core.slice(title.length).replace(/^\s*[—–-]\s*/, "").trim();
+  } else {
+    title = "";
+  }
+
+  const hookHi = !disabled && hook ? await translateCore(hook) : "";
+
+  if (title) {
+    const catHi = T.CATEGORY_HI[ctx.category] ? `${T.CATEGORY_HI[ctx.category]} अभियान` : "";
+    const tail = hookHi || catHi;
+    return [lead, title, tail ? `— ${tail}` : "", tags].filter(Boolean).join(" ");
+  }
+  if (!hookHi) return "";
+  return [lead, hookHi, tags].filter(Boolean).join(" ");
+}
+
 function templateFallback({ title, category, expeditionName, tags = [], notes = "" }) {
-  const place = expeditionName || category;
-  const tagText = tags.length ? ` Tags: ${tags.join(", ")}.` : "";
-  const noteText = notes ? ` ${notes.trim()}` : "";
-
+  const region = category && category !== "General" ? category : "polar research";
   const description =
-    `${title} — a ${category} expedition record from NCPOR` +
+    `${title} is a record on ${region} from NCPOR` +
     (expeditionName ? ` (${expeditionName})` : "") +
-    `.${noteText}${tagText}`.trim();
-
-  const socialCaption =
-    `🧊 ${title} | ${place} expedition — NCPOR Polar Science Portal` +
-    (tags.length ? ` #${tags[0].replace(/\s+/g, "")}` : "");
-
-  return { description, socialCaption };
+    "." +
+    (notes && notes.trim() ? ` ${T.tidySentence(notes.trim())}` : "");
+  return { description, socialCaption: buildSocialCaption(description, title, tags, category) };
 }
 
 const EXT_BY_CONTENT_TYPE = {
@@ -306,34 +404,58 @@ async function transcribeAudio(audioPath) {
   return out?.text?.trim() || "";
 }
 
-function chunkText(text, size = 3000) {
-  const chunks = [];
-  for (let i = 0; i < text.length; i += size) chunks.push(text.slice(i, i + size));
-  return chunks.length ? chunks : [""];
+function lowerFirst(t) {
+  return t ? t.charAt(0).toLowerCase() + t.slice(1) : t;
 }
 
-async function summarizeText(text, maxLength = 100) {
-  const trimmed = (text || "").trim();
-  if (trimmed.length < 40) return trimmed;
+function article(word) {
+  return /^[aeiou]/i.test(word) ? "an" : "a";
+}
 
-  const summarizer = await getSummarizer();
-  const chunks = chunkText(trimmed);
-  const partials = [];
+/**
+ * Turn raw extracted text into a short, correct description.
+ *
+ *  1. Clean it (wrapped lines, bullets, footers, page numbers, duplicates).
+ *  2. Build an extractive summary = the most informative REAL sentences.
+ *  3. For longer text, also ask the abstractive model — but only on a
+ *     condensed input, with anti-repetition settings, and only accept the
+ *     result if it passes the faithfulness check. Otherwise use (2).
+ *
+ * `notes` (admin-written context) is treated as a high-priority sentence.
+ */
+async function summarizeContent(rawText, notes = "") {
+  const items = T.cleanToItems(rawText);
+  if (notes && notes.trim()) items.unshift({ text: notes.trim(), boost: 2 });
 
-  for (const chunk of chunks) {
-    if (chunk.trim().length < 20) continue;
-    const out = await summarizer(chunk, { max_length: maxLength, min_length: 20 });
-    partials.push(out?.[0]?.summary_text?.trim() || "");
+  const plain = items.map((i) => (typeof i === "string" ? i : i.text)).join(" ");
+  if (plain.length < 25) return "";
+
+  const extractive = T.extractiveSummary(items, { maxChars: 380, maxSentences: 3 });
+  if (plain.length <= 420) return extractive; // already short — nothing to compress
+
+  const condensed = T.extractiveSummary(items, { maxChars: 1400, maxSentences: 12 });
+  try {
+    const summarizer = await getSummarizer();
+    const out = await summarizer(condensed, {
+      max_length: 90,
+      min_length: 25,
+      num_beams: 2,
+      no_repeat_ngram_size: 3,
+      repetition_penalty: 1.3,
+    });
+    const abstractive = out?.[0]?.summary_text?.trim() || "";
+    if (abstractive && T.isFaithfulSummary(abstractive, plain)) {
+      return T.tidySentence(abstractive);
+    }
+    console.log(`[localSummary] discarding unreliable model summary, using extractive: "${abstractive.slice(0, 120)}"`);
+  } catch (err) {
+    console.log(`[localSummary] summarizer unavailable, using extractive: ${err.message}`);
   }
-
-  return partials.join(" ").trim() || trimmed.slice(0, 300);
+  return extractive;
 }
 
-function buildSocialCaption(description, title, tags) {
-  const firstSentence = description.split(/(?<=[.!?])\s/)[0] || title;
-  const hashtag = tags?.[0] ? `#${tags[0].replace(/\s+/g, "")}` : "#NCPOR";
-  const caption = `🧊 ${firstSentence}`;
-  return (caption.length > 180 ? caption.slice(0, 177) + "..." : caption) + ` ${hashtag}`;
+function buildSocialCaption(description, title, tags, category) {
+  return T.buildEnglishCaption({ description, title, tags, category });
 }
 
 async function getMediaContentText({ mediaUrl, mediaType }) {
@@ -344,8 +466,12 @@ async function getMediaContentText({ mediaUrl, mediaType }) {
     try {
       const [caption, ocrText] = await Promise.all([captionImage(imgPath), ocrImage(imgPath)]);
       // OCR text (real words the model can't guess, e.g. on-image labels)
-      // is more trustworthy than a caption guess, so lead with it when present.
-      return [ocrText, caption].filter(Boolean).join(". ");
+      // is more trustworthy than a caption guess, so lead with it when
+      // present — but OCR on ordinary photos is often junk, so only keep it
+      // if it reads like real words.
+      const ocr = T.looksLikeRealText(ocrText) ? ocrText.replace(/\s+/g, " ").trim() : "";
+      const seen = caption ? `Photograph showing ${lowerFirst(caption.replace(/[.\s]+$/, ""))}.` : "";
+      return [ocr && T.tidySentence(ocr), seen].filter(Boolean).join(" ");
     } finally {
       safeUnlink(imgPath);
     }
@@ -371,7 +497,9 @@ async function getMediaContentText({ mediaUrl, mediaType }) {
         transcribeAudio(audioPath),
         captionImage(framePath),
       ]);
-      return `Visual: ${frameCaption}. Spoken content: ${transcript}`;
+      const seen = frameCaption ? `Video showing ${lowerFirst(frameCaption.replace(/[.\s]+$/, ""))}.` : "";
+      const spoken = T.isUsableTranscript(transcript) ? transcript : "";
+      return [seen, spoken].filter(Boolean).join(" ");
     } finally {
       safeUnlink(videoPath, audioPath, framePath);
     }
@@ -380,21 +508,26 @@ async function getMediaContentText({ mediaUrl, mediaType }) {
   return "";
 }
 
-async function generateSummaryLocal({ title, category, expeditionName, tags = [], notes = "", mediaUrl, mediaType }) {
+async function generateSummaryLocal({ title, category, contentType, expeditionName, tags = [], notes = "", mediaUrl, mediaType }) {
   try {
     const contentText = await getMediaContentText({ mediaUrl, mediaType });
+    let description = contentText ? await summarizeContent(contentText, notes) : "";
 
-    const metaText = `${title} is a ${category} expedition record` +
-      (expeditionName ? ` from ${expeditionName}` : "") +
-      (notes ? `. ${notes.trim()}` : "") + ".";
-
-    const fullText = `${metaText} ${contentText}`.trim();
-    const description = await summarizeText(fullText, 110);
-    const finalDescription = description || metaText;
+    // Nothing usable in the file itself (scanned PDF, silent video, blurry
+    // photo...): describe it from the metadata the admin typed instead.
+    if (!description || description.length < 25) {
+      const kind = (contentType || "record").toLowerCase();
+      const region = category && category !== "General" ? category : "polar research";
+      description =
+        `${title} is ${article(kind)} ${kind} on ${region}` +
+        (expeditionName ? ` (${expeditionName})` : "") +
+        " from NCPOR." +
+        (notes && notes.trim() ? ` ${T.tidySentence(notes.trim())}` : "");
+    }
 
     return {
-      description: finalDescription,
-      socialCaption: buildSocialCaption(finalDescription, title, tags),
+      description,
+      socialCaption: buildSocialCaption(description, title, tags, category),
     };
   } catch (err) {
     console.error("[localSummary] pipeline failed, using template fallback:", err.message);
@@ -402,4 +535,4 @@ async function generateSummaryLocal({ title, category, expeditionName, tags = []
   }
 }
 
-module.exports = { generateSummaryLocal };
+module.exports = { generateSummaryLocal, translateToHindi };
