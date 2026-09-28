@@ -53,6 +53,14 @@ body { margin: 0; font-family: system-ui, sans-serif; color: var(--text); backgr
 .nav-admin-group { display: flex; align-items: center; gap: 4px; }
 .nav-divider { width: 1px; height: 22px; background: rgba(255,255,255,0.2); margin: 0 8px; }
 
+.lang-toggle { display: flex; gap: 4px; padding: 3px; border-radius: 999px; background: rgba(255,255,255,0.1); }
+.lang-toggle-btn {
+  border: none; background: transparent; color: rgba(255,255,255,0.75);
+  font-size: 0.8rem; font-weight: 600; padding: 4px 10px; border-radius: 999px; cursor: pointer;
+}
+.lang-toggle-btn.is-active { background: var(--accent, #1c8fa8); color: #fff; }
+
+
 .nav-button {
   color: white; text-decoration: none; font-size: 0.9rem; font-weight: 600;
   padding: 8px 16px; border-radius: 6px; background: var(--accent);

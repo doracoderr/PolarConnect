@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const connectDB = require("./config/db");
+const { apiLimiter } = require("./middleware/rateLimit");
 
 const authRoutes = require("./routes/auth.routes");
 const uploadRoutes = require("./routes/upload.routes");
@@ -25,6 +26,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.get("/api/health", (req, res) => res.json({ status: "ok", service: "polarconnect-api" }));
+
+// General ceiling on the whole API; /api/auth/login has its own tighter
+// limit layered on top (see auth.routes.js).
+app.use("/api", apiLimiter);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/upload", uploadRoutes);

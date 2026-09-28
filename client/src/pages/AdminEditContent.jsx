@@ -9,6 +9,15 @@ const CATEGORIES = [
   "General",
 ];
 
+const CONTENT_TYPES = [
+  "Expedition Report",
+  "Scientific Dataset",
+  "Publication",
+  "Photograph",
+  "Video",
+  "Institutional Activity",
+];
+
 export default function AdminEditContent() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -76,6 +85,7 @@ export default function AdminEditContent() {
       await api.put(`/content/${id}`, {
         title: item.title,
         category: item.category,
+        contentType: item.contentType,
         expeditionName: item.expeditionName,
         description: item.description,
         socialCaption: item.socialCaption,
@@ -216,6 +226,22 @@ export default function AdminEditContent() {
                 value={category}
               >
                 {category}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Content Type
+          <select
+            value={item.contentType || "Expedition Report"}
+            onChange={(e) =>
+              update("contentType", e.target.value)
+            }
+          >
+            {CONTENT_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
               </option>
             ))}
           </select>

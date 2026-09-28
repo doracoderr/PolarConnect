@@ -5,6 +5,14 @@ import { uploadToCloudinary } from "../api/cloudinaryUpload";
 import { compressImageIfNeeded } from "../utils/compressImage";
 
 const CATEGORIES = ["Antarctica", "Arctic", "Himalaya", "General"];
+const CONTENT_TYPES = [
+  "Expedition Report",
+  "Scientific Dataset",
+  "Publication",
+  "Photograph",
+  "Video",
+  "Institutional Activity",
+];
 
 // Cloudinary free-plan limits:
 // 10MB for images/raw documents, 100MB for videos.
@@ -68,6 +76,7 @@ export default function AdminUpload() {
   const [inputKey, setInputKey] = useState(0);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Antarctica");
+  const [contentType, setContentType] = useState("Expedition Report");
   const [expeditionName, setExpeditionName] = useState("");
   const [tags, setTags] = useState("");
   const [notes, setNotes] = useState("");
@@ -124,6 +133,7 @@ export default function AdminUpload() {
           url: result.secure_url,
           publicId: result.public_id,
           mediaType: mediaTypeFromResource(result.resource_type),
+          fileHash: result.fileHash,
         });
         setUploadStatus("uploaded");
         setUploadMessage("File uploaded. Fill in the details below.");
@@ -131,7 +141,9 @@ export default function AdminUpload() {
         if (cancelled) return;
         setUploadStatus("error");
         setUploadMessage(
-          err.response?.data?.message || err.message || "Upload failed"
+          err.isDuplicate
+            ? `⚠️ ${err.message} Please choose a different file, or delete/edit the existing entry first.`
+            : err.response?.data?.message || err.message || "Upload failed"
         );
       }
     }, AUTO_UPLOAD_DELAY_MS);
@@ -168,6 +180,7 @@ export default function AdminUpload() {
     setInputKey((k) => k + 1);
     setTitle("");
     setCategory("Antarctica");
+    setContentType("Expedition Report");
     setExpeditionName("");
     setTags("");
     setNotes("");
@@ -194,6 +207,7 @@ export default function AdminUpload() {
       const { data } = await api.post("/content/summary", {
         title,
         category,
+        contentType,
         expeditionName,
         tags,
         notes,
@@ -227,6 +241,7 @@ export default function AdminUpload() {
       const { data } = await api.post("/content", {
         title,
         category,
+        contentType,
         expeditionName,
         tags,
         notes,
@@ -236,6 +251,7 @@ export default function AdminUpload() {
         mediaUrl: uploaded.url,
         mediaType: uploaded.mediaType,
         cloudinaryPublicId: uploaded.publicId,
+        fileHash: uploaded.fileHash,
       });
 
       setSaved({ content: data.content, published: publish });
@@ -244,7 +260,9 @@ export default function AdminUpload() {
     } catch (err) {
       setSaveStatus("error");
       setSaveMessage(
-        err.response?.data?.message || "Could not save this content."
+        err.response?.status === 409
+          ? "This file has already been uploaded — it looks like a duplicate."
+          : err.response?.data?.message || "Could not save this content."
       );
     }
   }
@@ -477,6 +495,24 @@ export default function AdminUpload() {
                   onChange={(e) => setCategory(e.target.value)}
                 >
                   {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="admin-upload-field">
+                <span>
+                  Content Type
+                  <b>*</b>
+                </span>
+
+                <select
+                  value={contentType}
+                  onChange={(e) => setContentType(e.target.value)}
+                >
+                  {CONTENT_TYPES.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
@@ -722,6 +758,7 @@ export default function AdminUpload() {
 
                     <div className="card-body">
                       <span className="badge">{category}</span>
+                      <span className="badge">{contentType}</span>
                       <h3>{title}</h3>
                       <p>{description}</p>
                     </div>
@@ -730,6 +767,7 @@ export default function AdminUpload() {
               ) : (
                 <div className="detail">
                   <span className="badge">{category}</span>
+                  <span className="badge">{contentType}</span>
                   <h1>{title}</h1>
 
                   {expeditionName && (

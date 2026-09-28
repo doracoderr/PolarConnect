@@ -30,15 +30,23 @@ const PLACE_ORDER = ["Antarctica", "Arctic", "Himalaya"];
 export default function PublicPortal({ fixedCategory, fixedExpedition }) {
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
+  const [contentType, setContentType] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  async function fetchContent(searchValue = search) {
+  async function fetchContent(searchValue = search, contentTypeValue = contentType) {
     setLoading(true);
     setError("");
     try {
+      const lang = localStorage.getItem("pc_lang") || "en";
       const { data } = await api.get("/content", {
-        params: { search: searchValue, category: fixedCategory, expedition: fixedExpedition },
+        params: {
+          search: searchValue,
+          category: fixedCategory,
+          contentType: contentTypeValue,
+          expedition: fixedExpedition,
+          lang,
+        },
       });
       setItems(data.items);
     } catch (err) {
@@ -77,6 +85,7 @@ export default function PublicPortal({ fixedCategory, fixedExpedition }) {
 
       <SearchBar
         search={search} setSearch={setSearch}
+        contentType={contentType} setContentType={setContentType}
         onSubmit={() => fetchContent()}
         hideCategory
       />

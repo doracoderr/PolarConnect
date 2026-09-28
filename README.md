@@ -11,6 +11,8 @@ Built for **Smart India Hackathon 2026** — Problem Statement **SIH26063** (NCP
 | Member | Govind Yadav |
 | Member | Shah Alam |
 | Member | Harsh |
+| Member | Chetna |
+| Member | Chaitali |
 
 ## Problem
 
@@ -22,9 +24,11 @@ A web portal where NCPOR admins upload expedition content, which is automaticall
 
 ### Core Modules
 - **Admin Panel** — secure upload with metadata (title, expedition, category, date, tags)
-- **Auto-Summary Generator** — produces a description + social caption on every upload
-- **Public Portal** — search and browse by category / expedition / year
+- **Duplicate Detection** — SHA-256 file hash computed server-side before Cloudinary upload; exact-duplicate files are rejected up front
+- **Auto-Summary Generator** — produces a description + social caption on every upload, in **English and Hindi**
+- **Public Portal** — search and browse by category / expedition / year, with an EN/HI language toggle
 - **SEO Layer** — schema.org structured data, sitemap, meta tags
+- **Rate Limiting** — brute-force protection on admin login, general ceiling on the public API
 
 ## Tech Stack
 
@@ -38,23 +42,25 @@ A web portal where NCPOR admins upload expedition content, which is automaticall
 ## System Flow
 
 ```
-Admin uploads content + metadata
-   -> Cloudinary stores media, returns secure URL
-   -> Node.js API saves record in MongoDB
-   -> Auto-summary service generates description + social caption
+Admin selects file + metadata
+   -> File goes to OUR server, SHA-256 hash computed
+   -> Duplicate? -> rejected before touching Cloudinary
+   -> Not a duplicate -> server streams it to Cloudinary, gets secure URL
+   -> Node.js API saves record in MongoDB (with file hash)
+   -> Auto-summary service generates description + social caption (English + Hindi)
    -> Admin gets email confirmation
-   -> Public portal fetches & renders content with SEO tags
+   -> Public portal fetches & renders content with SEO tags, in the visitor's chosen language
 ```
 
 ## API Overview
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| POST | `/api/auth/login` | Admin login, returns JWT |
-| GET | `/api/upload/signature` | Get signed Cloudinary upload signature |
-| POST | `/api/content` | Create a content record |
-| GET | `/api/content` | List / search / filter published content |
-| GET | `/api/content/:id` | Get single content item |
+| POST | `/api/auth/login` | Admin login, returns JWT (rate-limited: 5/15min) |
+| POST | `/api/upload` | Multipart file upload — server hashes the file, rejects exact duplicates (409), then forwards to Cloudinary |
+| POST | `/api/content` | Create a content record (auto-generates EN + HI summary/caption if not supplied) |
+| GET | `/api/content` | List / search / filter published content — `?lang=hi` for Hindi text |
+| GET | `/api/content/:id` | Get single content item — `?lang=hi` for Hindi text |
 | PUT | `/api/content/:id` | Update a content record (admin only) |
 | DELETE | `/api/content/:id` | Remove a content record (admin only) |
 | GET | `/sitemap.xml` | XML sitemap for search engines |
@@ -102,7 +108,9 @@ PUBLIC_SITE_URL=
 ## Local AI summary (offline, no Gemini API key)
 
 `server/src/controllers/content.controller.js` now uses `summary.local.service.js`
-instead of Gemini. Everything runs on-device via `@huggingface/transformers`.
+instead of Gemini. Everything runs on-device via `@huggingface/transformers`,
+including English→Hindi translation of the description and social caption
+(`Xenova/opus-mt-en-hi`, same offline/no-API-key model cache).
 
 **Install (inside `server/`):**
 ```

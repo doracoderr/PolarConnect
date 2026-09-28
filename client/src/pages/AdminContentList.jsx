@@ -175,6 +175,10 @@ function ContentRow({
           <span className="mc-category">{item.category}</span>
         </div>
 
+        <div role="cell" className="mc-cell mc-cell-content-type" data-label="Content Type">
+          <span className="mc-category">{item.contentType || "—"}</span>
+        </div>
+
         <div role="cell" className="mc-cell mc-cell-type" data-label="Type">
           <span className="mc-type">
             <TypeIcon type={item.mediaType} size={15} />
@@ -661,6 +665,7 @@ export default function AdminContentList() {
                   <div role="columnheader" className="mc-main">Content</div>
                   <div className="mc-meta">
                     <div role="columnheader" className="mc-cell">Category</div>
+                    <div role="columnheader" className="mc-cell">Content Type</div>
                     <div role="columnheader" className="mc-cell">Type</div>
                     <div role="columnheader" className="mc-cell">Status</div>
                     <div role="columnheader" className="mc-cell">Added</div>
